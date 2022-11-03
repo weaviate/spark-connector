@@ -1,0 +1,27 @@
+name: PR Checks
+
+on: pull_request
+
+jobs:
+  pr-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: SBT action clean
+        id: clean
+        uses: lokkju/github-action-sbt@master
+        with:
+          commands: clean
+
+      - name: SBT action build
+        id: clean
+        uses: lokkju/github-action-sbt@master
+        with:
+          commands: build
+
+      - name: SBT action test
+        id: test
+        uses: lokkju/github-action-sbt@master
+        with:
+          commands: test
