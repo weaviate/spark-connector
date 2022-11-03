@@ -1,0 +1,10 @@
+# sbt artifacts
+.bsp
+
+# java artifacts
+*.class
+*.log
+target
+
+# ide artifacts
+.idea
