@@ -19,4 +19,4 @@ jobs:
       - name: docker build
         run: docker build -t spark-with-weaviate .
       - name: Run sample Scala DS
-        run: docker run spark-with-weaviate /opt/spark/bin/spark-shell -i example.scala
+        run: docker run spark-with-weaviate /opt/spark/bin/spark-shell -i /opt/spark/example.scala
