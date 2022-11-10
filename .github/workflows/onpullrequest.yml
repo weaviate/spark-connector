@@ -16,3 +16,7 @@ jobs:
         run: sbt -v +test
       - name: Create fat jar
         run: sbt assembly
+      - name: docker build
+        run: docker build -t spark-with-weaviate .
+      - name: Run sample Scala DS
+        run: docker run spark-with-weaviate /opt/spark/bin/spark-shell -i example.scala
