@@ -16,5 +16,4 @@ case class WeaviateCluster() extends SupportsWrite {
   override def capabilities(): util.Set[TableCapability] = Set(
     TableCapability.BATCH_WRITE
   ).asJava
-
 }
