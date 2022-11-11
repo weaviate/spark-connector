@@ -25,7 +25,7 @@ case class WeaviateDataWriter() extends DataWriter[InternalRow] with Serializabl
       .withProperties(properties)
       .run()
     if (results.hasErrors) {
-      println("insert error" + results.getError.getMessages.asScala.foreach(_.getMessage))
+      println("insert error" + results.getError.getMessages)
     }
     println("Results: " + results.toString)
   }
