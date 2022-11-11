@@ -6,6 +6,8 @@ For use in Spark ETLs that populate Weaviate vector databases.
 sbt assembly
 docker build -t spark-with-weaviate .
 docker run -it spark-with-weaviate /opt/spark/bin/spark-shell
-val ds = spark.range(100)
-ds.write.format("io.weaviate.spark.Weaviate").save()
+case class Article (title: String, content: String)
+val articles = Seq( Article("Sam", "Sam"))
+val ds = articles.toDF
+ds.write.format("io.weaviate.spark.Weaviate").mode("append").save()
 ```
