@@ -10,7 +10,7 @@ import java.util
 case class WeaviateCluster() extends SupportsWrite {
   override def name(): String = "myCluster"
   override def schema(): StructType = StructType(
-    Array(StructField("title", StringType, nullable = false), StructField("content", StringType, nullable = false))
+    Array(StructField("title", StringType, nullable = true), StructField("content", StringType, nullable = true))
   )
   override def newWriteBuilder(info: LogicalWriteInfo): WriteBuilder = WeaviateWriteBuilder()
   override def capabilities(): util.Set[TableCapability] = Set(

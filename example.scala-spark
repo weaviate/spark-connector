@@ -1,2 +1,5 @@
-val ds = spark.range(100)
+sc.setLogLevel("info")
+case class Article (title: String, content: String)
+val articles = Seq( Article("Sam", "Sam"))
+val ds = articles.toDF
 ds.write.format("io.weaviate.spark.Weaviate").mode("append").save()
