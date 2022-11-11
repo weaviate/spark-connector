@@ -26,4 +26,28 @@ docker run -d --name="$weaviate_container" \
     semitechnologies/weaviate:1.16.1
 # wait for weaviate to come up
 curl --retry-all-errors --retry-connrefused --retry 5 http://localhost:8080/v1/schema
+
+# Upload schema to weaviate for test
+curl \
+    -X POST \
+    -H "Content-Type: application/json" \
+    -d '{
+        "class": "Article",
+        "description": "A description of this class, in this case, it is about authors",
+        "properties": [
+            {
+                "dataType": [
+                    "string"
+                ],
+                "name": "title"
+            },
+            {
+                "dataType": [
+                    "string"
+                ],
+                "name": "content"
+            }
+        ]
+    }' http://localhost:8080/v1/schema
+
 docker run --net=host --name "$spark_container" spark-with-weaviate /opt/spark/bin/spark-shell -i /opt/spark/example.scala
