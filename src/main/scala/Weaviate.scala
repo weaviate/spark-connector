@@ -11,11 +11,25 @@ import technology.semi.weaviate.client.WeaviateClient
 import java.util
 import scala.jdk.CollectionConverters._
 
+class WeaviateResultError(s: String) extends Exception(s) {}
+class WeaviateClassNotFoundError(s: String) extends Exception(s) {}
+
 class Weaviate extends TableProvider with DataSourceRegister {
   override def shortName(): String = "weaviate"
-  override def inferSchema(options: CaseInsensitiveStringMap): StructType = StructType(
-    Array(StructField("title", StringType, nullable = true), StructField("content", StringType, nullable = true))
-  )
+  override def inferSchema(options: CaseInsensitiveStringMap): StructType = {
+    val host = options.get("host")
+    val scheme = options.get("scheme")
+    val config = new Config(scheme, host)
+    val client = new WeaviateClient(config)
+    val className = options.get("className")
+    val result = client.schema.classGetter.withClassName(className).run
+    if (result.hasErrors) throw new WeaviateResultError(result.getError.getMessages.toString)
+    if (result.getResult == null) throw new WeaviateClassNotFoundError("Class "+className+ " was not found.")
+    val properties = result.getResult.getProperties.asScala
+    // TODO p.getDataType returns List<string> so need to think about how to convert to Spark datatype
+    val structFields = properties.map(p => StructField(p.getName(), DataTypes.StringType, true, Metadata.empty))
+    new StructType(structFields.toArray)
+  }
   override def getTable(schema: StructType, partitioning: Array[Transform], properties: util.Map[String, String]): Table =
     WeaviateCluster()
 }
