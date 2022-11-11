@@ -23,6 +23,7 @@ case class WeaviateDataWriter() extends DataWriter[InternalRow] with Serializabl
       .data()
       .creator()
       .withProperties(properties)
+      .withClassName("Page")
       .run()
     if (results.hasErrors) {
       println("insert error" + results.getError.getMessages)
