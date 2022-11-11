@@ -15,4 +15,4 @@ jobs:
       - name: Build and Test
         run: sbt -v +test
       - name: Run integration tests
-        run: ./run_tests.sh
+        run: bash run-tests.sh
