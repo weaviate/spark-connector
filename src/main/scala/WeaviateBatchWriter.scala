@@ -4,6 +4,6 @@ import org.apache.spark.sql.connector.write.{BatchWrite, DataWriterFactory, Phys
 
 case class WeaviateBatchWriter() extends BatchWrite {
   override def createBatchWriterFactory(info: PhysicalWriteInfo): DataWriterFactory = WeaviateDataWriterFactory()
-  override def abort(messages: Array[WriterCommitMessage]): Unit = ???
-  override def commit(messages: Array[WriterCommitMessage]): Unit = ???
+  override def abort(messages: Array[WriterCommitMessage]): Unit = {}
+  override def commit(messages: Array[WriterCommitMessage]): Unit = {}
 }
