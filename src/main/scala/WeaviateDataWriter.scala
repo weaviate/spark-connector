@@ -23,6 +23,7 @@ case class WeaviateDataWriter() extends DataWriter[InternalRow] with Serializabl
       .data()
       .creator()
       .withProperties(properties)
+      .withClassName("Page")
       .run()
     if (results.hasErrors) {
       println("insert error" + results.getError.getMessages)
@@ -31,9 +32,11 @@ case class WeaviateDataWriter() extends DataWriter[InternalRow] with Serializabl
   }
 
   private def getPropertiesFromRecord(record: InternalRow): util.Map[String, AnyRef] = {
+    println("HERE IS THE RECORD " + record.toString)
     val properties = scala.collection.mutable.Map[String, AnyRef]()
     schema.zipWithIndex.foreach(itemWithIndex => properties(itemWithIndex._1) = record.getString(itemWithIndex._2))
 
+    println("HERE ARE THE PROPERTIES " + properties)
     properties.asJava
   }
 
