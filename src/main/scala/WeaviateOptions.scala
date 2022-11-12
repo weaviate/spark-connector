@@ -6,7 +6,7 @@ import org.apache.spark.sql.util.CaseInsensitiveStringMap
 class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
   private val DEFAULT_BATCH_SIZE = 100
 
-  val maxBatchSize: Int =
+  val batchSize: Int =
     config
       .getInt(WEAVIATE_BATCH_SIZE_CONF, DEFAULT_BATCH_SIZE)
   val host: String = config.get(WEAVIATE_HOST_CONF)
