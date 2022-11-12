@@ -51,3 +51,21 @@ curl \
     }' http://localhost:8080/v1/schema
 
 docker run --net=host --name "$spark_container" spark-with-weaviate /opt/spark/bin/spark-shell -i /opt/spark/example.scala
+
+count=$(echo '{
+    "query": "{
+      Aggregate {
+        Article {
+          meta {
+            count
+          }
+        }
+      }
+    }"
+  }' | curl \
+    -X POST \
+    -H 'Content-Type: application/json' \
+    -d @- \
+    http://localhost:8080/v1/graphql | jq '.data.Aggregate.Article[0].meta.count')
+
+[[ $count = 1 ]] && exit 0 || exit 1
