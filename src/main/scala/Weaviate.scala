@@ -17,9 +17,8 @@ class WeaviateClassNotFoundError(s: String) extends Exception(s) {}
 class Weaviate extends TableProvider with DataSourceRegister {
   override def shortName(): String = "weaviate"
   override def inferSchema(options: CaseInsensitiveStringMap): StructType = {
-    val host = options.get("host")
-    val scheme = options.get("scheme")
-    val config = new Config(scheme, host)
+    val weaviateOptions = new WeaviateOptions(options)
+    val config = new Config(weaviateOptions.scheme, weaviateOptions.host)
     val client = new WeaviateClient(config)
     val className = options.get("className")
     val result = client.schema.classGetter.withClassName(className).run
@@ -30,6 +29,8 @@ class Weaviate extends TableProvider with DataSourceRegister {
     val structFields = properties.map(p => StructField(p.getName(), DataTypes.StringType, true, Metadata.empty))
     new StructType(structFields.toArray)
   }
-  override def getTable(schema: StructType, partitioning: Array[Transform], properties: util.Map[String, String]): Table =
-    WeaviateCluster()
+  override def getTable(schema: StructType, partitioning: Array[Transform], properties: util.Map[String, String]): Table = {
+    val weaviateOptions = new WeaviateOptions(new CaseInsensitiveStringMap(properties))
+    WeaviateCluster(weaviateOptions)
+  }
 }
