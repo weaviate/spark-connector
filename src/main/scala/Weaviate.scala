@@ -18,14 +18,12 @@ class Weaviate extends TableProvider with DataSourceRegister {
   override def shortName(): String = "weaviate"
   override def inferSchema(options: CaseInsensitiveStringMap): StructType = {
     val weaviateOptions = new WeaviateOptions(options)
-    val config = new Config(weaviateOptions.scheme, weaviateOptions.host)
-    val client = new WeaviateClient(config)
-    val className = options.get("className")
+    val client = weaviateOptions.getClient()
+    val className = weaviateOptions.className
     val result = client.schema.classGetter.withClassName(className).run
     if (result.hasErrors) throw new WeaviateResultError(result.getError.getMessages.toString)
     if (result.getResult == null) throw new WeaviateClassNotFoundError("Class "+className+ " was not found.")
     val properties = result.getResult.getProperties.asScala
-    // TODO p.getDataType returns List<string> so need to think about how to convert to Spark datatype
     val structFields = properties.map(p => StructField(p.getName(), Utils.weaviateToSparkDatatype(p.getDataType), true, Metadata.empty))
     new StructType(structFields.toArray)
   }
