@@ -11,7 +11,7 @@ import scala.jdk.CollectionConverters._
 case class WeaviateCommitMessage(msg: String) extends WriterCommitMessage
 
 case class WeaviateDataWriter(weaviateOptions: WeaviateOptions) extends DataWriter[InternalRow] with Serializable {
-  val schema = weaviateOptions.schema
+  val schema = Seq("title", "content")
   override def write(record: InternalRow): Unit = {
     println("connecting to weaviate")
     val config = new Config(weaviateOptions.scheme, weaviateOptions.host)
