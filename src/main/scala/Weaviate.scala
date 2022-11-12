@@ -27,7 +27,7 @@ class Weaviate extends TableProvider with DataSourceRegister {
     if (result.getResult == null) throw new WeaviateClassNotFoundError("Class "+className+ " was not found.")
     val properties = result.getResult.getProperties.asScala
     // TODO p.getDataType returns List<string> so need to think about how to convert to Spark datatype
-    val structFields = properties.map(p => StructField(p.getName(), DataTypes.StringType, true, Metadata.empty))
+    val structFields = properties.map(p => StructField(p.getName(), Utils.weaviateToSparkDatatype(p.getDataType), true, Metadata.empty))
     new StructType(structFields.toArray)
   }
   override def getTable(schema: StructType, partitioning: Array[Transform], properties: util.Map[String, String]): Table =
