@@ -14,8 +14,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions) extends DataWrit
   val schema = Seq("title", "content")
   override def write(record: InternalRow): Unit = {
     println("connecting to weaviate")
-    val config = new Config(weaviateOptions.scheme, weaviateOptions.host)
-    val client = new WeaviateClient(config)
+    val client = weaviateOptions.getClient()
 
     val properties = getPropertiesFromRecord(record)
     val results = client
