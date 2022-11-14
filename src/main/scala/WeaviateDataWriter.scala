@@ -3,7 +3,7 @@ package io.weaviate.spark
 
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
-import org.apache.spark.sql.types.{ArrayType, DataType, FloatType, IntegerType, StringType, StructType}
+import org.apache.spark.sql.types._
 
 import java.util
 import scala.jdk.CollectionConverters._
