@@ -10,7 +10,7 @@ import scala.jdk.CollectionConverters._
 
 case class WeaviateCommitMessage(msg: String) extends WriterCommitMessage
 
-case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, structType: StructType) extends DataWriter[InternalRow] with Serializable {
+case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructType) extends DataWriter[InternalRow] with Serializable {
 
   override def write(record: InternalRow): Unit = {
     println("connecting to weaviate")
@@ -42,8 +42,8 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, structType: Stru
 
   private def getPropertiesFromRecord(record: InternalRow): util.Map[String, AnyRef] = {
     val properties = scala.collection.mutable.Map[String, AnyRef]()
-    structType.zipWithIndex.foreach(f =>
-      properties(f._1.name) = getValueFromField(f._2, record, f._1.dataType))
+    schema.zipWithIndex.foreach(field =>
+      properties(field._1.name) = getValueFromField(field._2, record, field._1.dataType))
 
     properties.asJava
   }
