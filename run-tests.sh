@@ -43,6 +43,12 @@ curl \
             },
             {
                 "dataType": [
+                    "int"
+                ],
+                "name": "count"
+            },
+            {
+                "dataType": [
                     "string"
                 ],
                 "name": "content"
@@ -68,4 +74,4 @@ count=$(echo '{
     -d @- \
     http://localhost:8080/v1/graphql | jq '.data.Aggregate.Article[0].meta.count')
 
-[[ $count = 1 ]] && exit 0 || exit 1
+[[ $count = 2 ]] && exit 0 || exit 1

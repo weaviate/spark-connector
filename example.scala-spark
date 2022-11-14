@@ -1,9 +1,19 @@
 sc.setLogLevel("info")
 case class Article (title: String, content: String)
-val articles = Seq( Article("Sam", "Sam"))
-val ds = articles.toDF
+val articles = Seq( Article("Sam", "Sam")).toDF
 
-ds.write
+articles.write
+  .format("io.weaviate.spark.Weaviate")
+  .option("scheme", "http")
+  .option("host", "localhost:8080")
+  .option("className", "Article")
+  .mode("append")
+  .save()
+
+case class ArticleWithInt (title: String, content: String, count: Int)
+val articlesWithCount = Seq( ArticleWithInt("Sam", "Sam", 5)).toDF
+
+articlesWithCount.write
   .format("io.weaviate.spark.Weaviate")
   .option("scheme", "http")
   .option("host", "localhost:8080")
