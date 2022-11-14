@@ -30,6 +30,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, structType: Stru
   }
 
   def getValueFromField(index: Int, record: InternalRow, dataType: DataType): AnyRef = {
+    // TODO add support for all types such as DateType etc
     dataType match {
       case StringType => record.getString(index)
       case IntegerType => Int.box(record.getInt(index))
