@@ -45,7 +45,7 @@ curl \
                 "dataType": [
                     "int"
                 ],
-                "name": "count"
+                "name": "wordCount"
             },
             {
                 "dataType": [
@@ -58,20 +58,28 @@ curl \
 
 docker run --net=host --name "$spark_container" spark-with-weaviate /opt/spark/bin/spark-shell -i /opt/spark/example.scala
 
-count=$(echo '{
+article=$(echo '{
     "query": "{
-      Aggregate {
+      Get {
         Article {
-          meta {
-            count
-          }
+          title
+          content
+          wordCount
         }
       }
     }"
   }' | curl \
-    -X POST \
-    -H 'Content-Type: application/json' \
-    -d @- \
-    http://localhost:8080/v1/graphql | jq '.data.Aggregate.Article[0].meta.count')
+      -X POST \
+      -H 'Content-Type: application/json' \
+      -d @- \
+      http://localhost:8080/v1/graphql)
 
-[[ $count = 2 ]] && exit 0 || exit 1
+title=$(echo "$article" | jq -r '.data.Get.Article[0].title')
+content=$(echo "$article" | jq -r '.data.Get.Article[0].content')
+wordCount=$(echo "$article" | jq -r '.data.Get.Article[0].wordCount')
+count=$(echo "$article" | jq -r '.data.Get.Article | length')
+[[ $count -eq 1 ]] && echo "Count check passed" || exit 1
+[ "$title" == "Sam" ] && echo "Title check passed" || exit 1
+[ "$content" == "Sam and Sam" ] && echo "Content check passed" || exit 1
+[[ $wordCount -eq 3 ]] && echo "WordCount check passed" || exit 1
+echo "All tests passed" && exit 0
