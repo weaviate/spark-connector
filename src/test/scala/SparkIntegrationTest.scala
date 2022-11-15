@@ -2,7 +2,7 @@ package io.weaviate.spark
 
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.scalatest.BeforeAndAfter
-import technology.semi.weaviate.client.v1.schema.model.DataType
+import technology.semi.weaviate.client.v1.graphql.query.fields.Field
 import technology.semi.weaviate.client.v1.schema.model.Property
 import technology.semi.weaviate.client.v1.schema.model.WeaviateClass
 
@@ -79,7 +79,7 @@ class SparkIntegrationTest
   }
 
 
-  test("Article with strings") {
+  test("Article with strings and int") {
     createClass()
     import spark.implicits._
     val articles = Seq(Article("Sam", "Sam and Sam", 3)).toDF
@@ -91,5 +91,19 @@ class SparkIntegrationTest
       .option("className", "Article")
       .mode("append")
       .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("Article")
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting Articles" + results.getError.getMessages)
+    }
+
+    val props = results.getResult.get(0).getProperties
+    assert(props.get("title") == "Sam")
+    assert(props.get("content") == "Sam and Sam")
+    assert(props.get("wordCount") == 3)
+    assert(results.getResult.size == 1)
   }
 }
