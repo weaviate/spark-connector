@@ -57,6 +57,14 @@ class SparkIntegrationTest
       }
     }
     println("Results: " + results.toString)
+    retries = 3
+  }
+
+  def deleteClass(): Unit = {
+    val result = client.schema().classDeleter()
+      .withClassName("Article")
+      .run()
+    if (result.hasErrors) println("Error deleting class Article " + result.getError.getMessages)
   }
 
   before {
@@ -105,5 +113,35 @@ class SparkIntegrationTest
     assert(props.get("content") == "Sam and Sam")
     assert(props.get("wordCount") == 3)
     assert(results.getResult.size == 1)
+    deleteClass()
+  }
+
+  test("Test empty string") {
+    createClass()
+    import spark.implicits._
+    val articles = Seq(Article("", "", 0)).toDF
+
+    articles.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("className", "Article")
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("Article")
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting Articles" + results.getError.getMessages)
+    }
+
+    val props = results.getResult.get(0).getProperties
+    assert(props.get("title") == "")
+    assert(props.get("content") == "")
+    assert(props.get("wordCount") == 0)
+    assert(results.getResult.size == 1)
+    deleteClass()
   }
 }
