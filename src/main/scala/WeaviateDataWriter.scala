@@ -19,27 +19,20 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
   override def write(record: InternalRow): Unit = {
     val obj = WeaviateObject.builder.className(weaviateOptions.className)
       .properties(getPropertiesFromRecord(record)).build
-    // TODO review if synchronized is really needed
-    batch.synchronized {
-      batch += obj
-    }
+    batch += obj
 
     if (batch.size >= weaviateOptions.batchSize) writeBatch
   }
 
   def writeBatch(): Unit = {
     val client = weaviateOptions.getClient()
+    val results = client.batch().objectsBatcher().withObjects(batch.toList: _*).run()
 
-    // TODO review if synchronized is really needed
-    batch.synchronized {
-      val results = client.batch().objectsBatcher().withObjects(batch.toList: _*).run()
-
-      if (results.hasErrors) {
-        println("batch error" + results.getError.getMessages)
-      }
-      println("Writing batch successful. Results: " + results.getResult)
-      batch.clear()
+    if (results.hasErrors) {
+      println("batch error" + results.getError.getMessages)
     }
+    println("Writing batch successful. Results: " + results.getResult)
+    batch.clear()
   }
 
   def getValueFromField(index: Int, record: InternalRow, dataType: DataType): AnyRef = {
@@ -62,7 +55,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
   }
 
   override def close(): Unit = {
-    writeBatch()
+    // TODO add logic for closing
     println("closed")
   }
 
@@ -72,8 +65,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
   }
 
   override def abort(): Unit = {
-    // TODO review what we should do here instead of writeBatch
-    writeBatch()
+    // TODO rollback previously written batch results if issue occured
     println("aborted")
   }
 }
