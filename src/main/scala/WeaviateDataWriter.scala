@@ -5,19 +5,17 @@ import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
 import org.apache.spark.sql.types._
 import technology.semi.weaviate.client.v1.data.model.WeaviateObject
 
-import java.util
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
 case class WeaviateCommitMessage(msg: String) extends WriterCommitMessage
 
 case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructType) extends DataWriter[InternalRow] with Serializable {
-  var batch = new ListBuffer[WeaviateObject]
+  var batch = new mutable.ListBuffer[WeaviateObject]
 
   override def write(record: InternalRow): Unit = {
-    val obj = WeaviateObject.builder.className(weaviateOptions.className)
-      .properties(getPropertiesFromRecord(record)).build
-    batch += obj
+
+    batch += buildWeaviateObject(record)
 
     if (batch.size >= weaviateOptions.batchSize) writeBatch
   }
@@ -44,12 +42,17 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     }
   }
 
-  private def getPropertiesFromRecord(record: InternalRow): util.Map[String, AnyRef] = {
-    val properties = scala.collection.mutable.Map[String, AnyRef]()
-    schema.zipWithIndex.foreach(field =>
-      properties(field._1.name) = getValueFromField(field._2, record, field._1.dataType))
-
-    properties.asJava
+  private def buildWeaviateObject(record: InternalRow): WeaviateObject = {
+    var builder = WeaviateObject.builder.className(weaviateOptions.className)
+    val properties = mutable.Map[String, AnyRef]()
+    schema.zipWithIndex.foreach(field => {
+      if (field._1.name == weaviateOptions.id) {
+        builder = builder.id(record.getString(field._2))
+      } else {
+        properties(field._1.name) = getValueFromField(field._2, record, field._1.dataType)
+      }
+    })
+    builder.properties(properties.asJava).build
   }
 
   override def close(): Unit = {

@@ -13,6 +13,7 @@ class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
   val host: String = config.get(WEAVIATE_HOST_CONF)
   val scheme: String = config.get(WEAVIATE_SCHEME_CONF)
   val className: String = config.get(WEAVIATE_CLASSNAME_CONF)
+  val id: String = config.get(WEAVIATE_ID_COLUMN_CONF)
 
   var client: WeaviateClient = _
 
@@ -29,4 +30,5 @@ object WeaviateOptions {
   val WEAVIATE_HOST_CONF: String       = "host"
   val WEAVIATE_SCHEME_CONF: String     = "scheme"
   val WEAVIATE_CLASSNAME_CONF: String  = "className"
+  val WEAVIATE_ID_COLUMN_CONF: String  = "id"
 }
