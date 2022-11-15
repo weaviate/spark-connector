@@ -116,16 +116,17 @@ class SparkIntegrationTest
     deleteClass()
   }
 
-  test("Test empty string") {
+  test("Test empty strings and large batch") {
     createClass()
     import spark.implicits._
-    val articles = Seq(Article("", "", 0)).toDF
+    val articles = (1 to 22).map(_ => Article("", "", 0)).toDF
 
     articles.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
       .option("host", "localhost:8080")
       .option("className", "Article")
+      .option("batchSize", 10)
       .mode("append")
       .save()
 
@@ -136,12 +137,13 @@ class SparkIntegrationTest
     if (results.hasErrors) {
       println("Error getting Articles" + results.getError.getMessages)
     }
-
-    val props = results.getResult.get(0).getProperties
-    assert(props.get("title") == "")
-    assert(props.get("content") == "")
-    assert(props.get("wordCount") == 0)
-    assert(results.getResult.size == 1)
+    assert(results.getResult.size == 22)
+    val props = (0 to 22 - 1).map(i => results.getResult.get(i).getProperties)
+    results.getResult.forEach(obj => {
+      assert(obj.getProperties.get("wordCount")  == 0)
+      assert(obj.getProperties.get("content")  == "")
+      assert(obj.getProperties.get("title")  == "")
+    })
     deleteClass()
   }
 }
