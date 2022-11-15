@@ -17,9 +17,14 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
   var batch = new ListBuffer[WeaviateObject]
 
   override def write(record: InternalRow): Unit = {
-    val obj = WeaviateObject.builder.className(weaviateOptions.className)
-      .properties(getPropertiesFromRecord(record)).build
-    batch += obj
+    val properties = getPropertiesFromRecord(record)
+    var obj = WeaviateObject.builder.className(weaviateOptions.className)
+    if (weaviateOptions.id != null) {
+      obj = obj.id(properties.get(weaviateOptions.id).get.toString)
+      properties.remove(weaviateOptions.id)
+    }
+    obj = obj.properties(properties.asJava)
+    batch += obj.build()
 
     if (batch.size >= weaviateOptions.batchSize) writeBatch
   }
@@ -46,12 +51,12 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     }
   }
 
-  private def getPropertiesFromRecord(record: InternalRow): util.Map[String, AnyRef] = {
+  private def getPropertiesFromRecord(record: InternalRow): scala.collection.mutable.Map[String, AnyRef] = {
     val properties = scala.collection.mutable.Map[String, AnyRef]()
     schema.zipWithIndex.foreach(field =>
-      properties(field._1.name) = getValueFromField(field._2, record, field._1.dataType))
-
-    properties.asJava
+      properties(field._1.name) = getValueFromField(field._2, record, field._1.dataType)
+    )
+    properties
   }
 
   override def close(): Unit = {
