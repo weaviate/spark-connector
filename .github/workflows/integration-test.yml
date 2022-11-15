@@ -15,7 +15,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 11
-      - name: Build and Test
+      - name: Build, Unit Test and Scala Spark Integration tests
         run: sbt -v +test
-      - name: Run integration tests
+      - name: Run docker and jar integration tests
         run: bash run-tests.sh
