@@ -4,23 +4,19 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
 import org.apache.spark.sql.types._
 import technology.semi.weaviate.client.v1.data.model.WeaviateObject
-import technology.semi.weaviate.client.v1.data.model.WeaviateObject.WeaviateObjectBuilder
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
 case class WeaviateCommitMessage(msg: String) extends WriterCommitMessage
 
 case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructType) extends DataWriter[InternalRow] with Serializable {
-  var batch = new ListBuffer[WeaviateObject]
+  var batch = new mutable.ListBuffer[WeaviateObject]
 
   override def write(record: InternalRow): Unit = {
-    val builder = getWeaviateBuilderFromRecord(record)
+    batch += buildWeaviateObject(record)
 
-    val obj = builder.className(weaviateOptions.className).build()
-    batch += obj
-
-    if (batch.size >= weaviateOptions.batchSize) writeBatch
+    if (batch.size >= weaviateOptions.batchSize) writeBatch()
   }
 
   def writeBatch(): Unit = {
@@ -34,18 +30,17 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     batch.clear()
   }
 
-  private def getWeaviateBuilderFromRecord(record: InternalRow): WeaviateObjectBuilder= {
-    val properties = scala.collection.mutable.Map[String, AnyRef]()
-    val builder = WeaviateObject.builder()
+  private def buildWeaviateObject(record: InternalRow): WeaviateObject = {
+    var builder = WeaviateObject.builder.className(weaviateOptions.className)
+    val properties = mutable.Map[String, AnyRef]()
     schema.zipWithIndex.foreach(field =>
       field._1.name match {
-        case weaviateOptions.vector => builder.vector(record.getArray(field._2).toArray(FloatType))
-        case _ =>  properties(field._1.name) = getValueFromField(field._2, record, field._1.dataType)
+        case weaviateOptions.vector => builder = builder.vector(record.getArray(field._2).toArray(FloatType))
+        case weaviateOptions.id => builder = builder.id(record.getString(field._2))
+        case _ => properties(field._1.name) = getValueFromField(field._2, record, field._1.dataType)
       }
     )
-    builder.properties(properties.asJava)
-
-    builder
+    builder.properties(properties.asJava).build
   }
 
   def getValueFromField(index: Int, record: InternalRow, dataType: DataType): AnyRef = {
