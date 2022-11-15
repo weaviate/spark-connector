@@ -29,6 +29,6 @@ class Weaviate extends TableProvider with DataSourceRegister {
   }
   override def getTable(schema: StructType, partitioning: Array[Transform], properties: util.Map[String, String]): Table = {
     val weaviateOptions = new WeaviateOptions(new CaseInsensitiveStringMap(properties))
-    WeaviateCluster(weaviateOptions)
+    WeaviateCluster(weaviateOptions, schema)
   }
 }

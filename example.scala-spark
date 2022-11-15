@@ -1,9 +1,8 @@
 sc.setLogLevel("info")
-case class Article (title: String, content: String)
-val articles = Seq( Article("Sam", "Sam"))
-val ds = articles.toDF
+case class Article (title: String, content: String, wordCount: Int)
+val articles = Seq( Article("Sam", "Sam and Sam", 3)).toDF
 
-ds.write
+articles.write
   .format("io.weaviate.spark.Weaviate")
   .option("scheme", "http")
   .option("host", "localhost:8080")
