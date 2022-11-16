@@ -205,7 +205,7 @@ class SparkIntegrationTest
       println("Error getting Articles" + results.getError.getMessages)
     }
 
-    assert(results.getResult.get(0).getVector == Array(0.01f, 0.02f))
+    assert(results.getResult.get(0).getVector sameElements Array(0.01f, 0.02f))
     val props = results.getResult.get(0).getProperties
     assert(props.get("title") == "Sam")
     assert(props.get("content") == "Sam and Sam")
@@ -213,5 +213,4 @@ class SparkIntegrationTest
     assert(results.getResult.size == 1)
     deleteClass()
   }
-
 }

@@ -5,8 +5,6 @@ import org.apache.spark.sql.connector.expressions.Transform
 import org.apache.spark.sql.sources.DataSourceRegister
 import org.apache.spark.sql.types.{DataTypes, Metadata, StringType, StructField, StructType}
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
-import technology.semi.weaviate.client.Config
-import technology.semi.weaviate.client.WeaviateClient
 
 import java.util
 import scala.jdk.CollectionConverters._
@@ -28,6 +26,8 @@ class Weaviate extends TableProvider with DataSourceRegister {
       StructField(p.getName(), Utils.weaviateToSparkDatatype(p.getDataType), true, Metadata.empty))
     if (weaviateOptions.id != null)
       structFields.append(StructField("id", DataTypes.StringType, true, Metadata.empty))
+    if (weaviateOptions.vector != null)
+      structFields.append(StructField("vector", DataTypes.createArrayType(DataTypes.FloatType), true, Metadata.empty))
     new StructType(structFields.toArray)
   }
   override def getTable(schema: StructType, partitioning: Array[Transform], properties: util.Map[String, String]): Table = {
