@@ -14,7 +14,7 @@ case class ArticleWithVector(title: String, content: String, wordCount: Int, vec
 
 case class ArticleDifferentOrder(content: String, wordCount: Int, title: String)
 
-case class ArticleWithID(id: String, title: String, content: String, wordCount: Int)
+case class ArticleWithID(idCol: String, title: String, content: String, wordCount: Int)
 
 class SparkIntegrationTest
   extends AnyFunSuite
@@ -221,7 +221,7 @@ class SparkIntegrationTest
       .option("scheme", "http")
       .option("host", "localhost:8080")
       .option("className", "Article")
-      .option("id", "id")
+      .option("id", "idCol")
       .mode("append")
       .save()
 

@@ -27,7 +27,7 @@ class Weaviate extends TableProvider with DataSourceRegister {
     if (weaviateOptions.vector != null)
       structFields.append(StructField(weaviateOptions.vector, DataTypes.createArrayType(DataTypes.FloatType), true, Metadata.empty))
     if (weaviateOptions.id != null)
-      structFields.append(StructField("id", DataTypes.StringType, true, Metadata.empty))
+      structFields.append(StructField(weaviateOptions.id, DataTypes.StringType, true, Metadata.empty))
     new StructType(structFields.toArray)
   }
   override def getTable(schema: StructType, partitioning: Array[Transform], properties: util.Map[String, String]): Table = {
