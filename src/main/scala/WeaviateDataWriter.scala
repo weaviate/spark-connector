@@ -40,7 +40,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     val builder: WeaviateObject.WeaviateObjectBuilder = new WeaviateObjectBuilder()
     schema.zipWithIndex.foreach(field =>
       field._1.name match {
-        case weaviateOptions.vectorSupplied => builder.vector(record.getArray(field._2).toArray(FloatType))
+        case weaviateOptions.vector => builder.vector(record.getArray(field._2).toArray(FloatType))
         case _ =>  properties(field._1.name) = getValueFromField(field._2, record, field._1.dataType)
       }
     )

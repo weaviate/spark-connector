@@ -24,8 +24,6 @@ class Weaviate extends TableProvider with DataSourceRegister {
     val properties = result.getResult.getProperties.asScala
     val structFields = properties.map(p =>
       StructField(p.getName(), Utils.weaviateToSparkDatatype(p.getDataType), true, Metadata.empty))
-    if (weaviateOptions.id != null)
-      structFields.append(StructField("id", DataTypes.StringType, true, Metadata.empty))
     if (weaviateOptions.vector != null)
       structFields.append(StructField("vector", DataTypes.createArrayType(DataTypes.FloatType), true, Metadata.empty))
     new StructType(structFields.toArray)
