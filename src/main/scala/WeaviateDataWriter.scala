@@ -6,7 +6,6 @@ import org.apache.spark.sql.types._
 import technology.semi.weaviate.client.v1.data.model.WeaviateObject
 import technology.semi.weaviate.client.v1.data.model.WeaviateObject.WeaviateObjectBuilder
 
-import java.util
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
 

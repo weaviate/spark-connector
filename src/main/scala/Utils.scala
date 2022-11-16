@@ -1,6 +1,7 @@
 package io.weaviate.spark
 
 import org.apache.spark.sql.types.{DataType, DataTypes}
+
 import java.util
 
 object Utils {

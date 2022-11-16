@@ -1,11 +1,11 @@
 package io.weaviate.spark
 
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
-import technology.semi.weaviate.client.v1.schema.model.Property
-import technology.semi.weaviate.client.v1.schema.model.WeaviateClass
-import scala.jdk.CollectionConverters.{mapAsJavaMapConverter, seqAsJavaListConverter}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
+import technology.semi.weaviate.client.v1.schema.model.{Property, WeaviateClass}
+
+import scala.jdk.CollectionConverters.{mapAsJavaMapConverter, seqAsJavaListConverter}
 import scala.sys.process._
 
 case class Article(title: String, content: String, wordCount: Int)

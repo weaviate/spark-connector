@@ -1,6 +1,7 @@
 package io.weaviate.spark
 
-import io.weaviate.spark.WeaviateOptions._
+import WeaviateOptions._
+
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import technology.semi.weaviate.client.{Config, WeaviateClient}
 

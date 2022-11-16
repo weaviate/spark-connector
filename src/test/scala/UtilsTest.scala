@@ -1,6 +1,6 @@
 package io.weaviate.spark
 
-import org.apache.spark.sql.types.{DataType, DataTypes}
+import org.apache.spark.sql.types.DataTypes
 import org.scalatest.funsuite.AnyFunSuite
 
 import scala.collection.JavaConverters._
