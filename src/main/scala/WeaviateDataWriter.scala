@@ -12,6 +12,7 @@ import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
 
 case class WeaviateCommitMessage(msg: String) extends WriterCommitMessage
+case class Obj(properties: Map[String, AnyRef], id: String, vector: Array[Float])
 
 case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructType) extends DataWriter[InternalRow] with Serializable {
   var batch = new ListBuffer[WeaviateObject]
@@ -23,6 +24,10 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       obj = obj.id(properties.get(weaviateOptions.id).get.toString)
       properties.remove(weaviateOptions.id)
     }
+    //if (weaviateOptions.vector != null) {
+    //  obj = obj.vector(properties.get(weaviateOptions.vector).get.asInstanceOf[Array[Float]])
+    //  properties.remove(weaviateOptions.vector)
+    //}
     obj = obj.properties(properties.asJava)
     batch += obj.build()
 
