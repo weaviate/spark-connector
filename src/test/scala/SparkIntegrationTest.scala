@@ -10,6 +10,7 @@ import scala.sys.process._
 
 case class Article(title: String, content: String, wordCount: Int)
 case class ArticleWithVector(title: String, content: String, wordCount: Int, vector: Array[Float])
+case class ArticleDifferentOrder(content: String,  wordCount: Int, title: String)
 
 class SparkIntegrationTest
   extends AnyFunSuite
@@ -141,6 +142,35 @@ class SparkIntegrationTest
       assert(obj.getProperties.get("content") == "")
       assert(obj.getProperties.get("title") == "")
     })
+    deleteClass()
+  }
+
+  test("Article different order") {
+    createClass()
+    import spark.implicits._
+    val articles = Seq(ArticleDifferentOrder("Sam and Sam", 3, "Sam")).toDF
+
+    articles.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("className", "Article")
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("Article")
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting Articles" + results.getError.getMessages)
+    }
+
+    val props = results.getResult.get(0).getProperties
+    assert(props.get("title") == "Sam")
+    assert(props.get("content") == "Sam and Sam")
+    assert(props.get("wordCount") == 3)
+    assert(results.getResult.size == 1)
     deleteClass()
   }
 
