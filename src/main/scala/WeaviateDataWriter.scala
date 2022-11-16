@@ -4,8 +4,8 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
 import org.apache.spark.sql.types._
 import technology.semi.weaviate.client.v1.data.model.WeaviateObject
+import technology.semi.weaviate.client.v1.data.model.WeaviateObject.WeaviateObjectBuilder
 
-import java.util
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
 
@@ -15,8 +15,9 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
   var batch = new ListBuffer[WeaviateObject]
 
   override def write(record: InternalRow): Unit = {
-    val obj = WeaviateObject.builder.className(weaviateOptions.className)
-      .properties(getPropertiesFromRecord(record)).build
+    val builder = getWeaviateBuilderFromRecord(record)
+
+    val obj = builder.className(weaviateOptions.className).build()
     batch += obj
 
     if (batch.size >= weaviateOptions.batchSize) writeBatch
@@ -33,6 +34,20 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     batch.clear()
   }
 
+  private def getWeaviateBuilderFromRecord(record: InternalRow): WeaviateObjectBuilder= {
+    val properties = scala.collection.mutable.Map[String, AnyRef]()
+    val builder = WeaviateObject.builder()
+    schema.zipWithIndex.foreach(field =>
+      field._1.name match {
+        case weaviateOptions.vector => builder.vector(record.getArray(field._2).toArray(FloatType))
+        case _ =>  properties(field._1.name) = getValueFromField(field._2, record, field._1.dataType)
+      }
+    )
+    builder.properties(properties.asJava)
+
+    builder
+  }
+
   def getValueFromField(index: Int, record: InternalRow, dataType: DataType): AnyRef = {
     // TODO add support for all types such as DateType etc
     dataType match {
@@ -42,14 +57,6 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       case ArrayType(FloatType, true) => record.getArray(index)
       case ArrayType(IntegerType, true) => record.getArray(index)
     }
-  }
-
-  private def getPropertiesFromRecord(record: InternalRow): util.Map[String, AnyRef] = {
-    val properties = scala.collection.mutable.Map[String, AnyRef]()
-    schema.zipWithIndex.foreach(field =>
-      properties(field._1.name) = getValueFromField(field._2, record, field._1.dataType))
-
-    properties.asJava
   }
 
   override def close(): Unit = {

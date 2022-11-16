@@ -2,18 +2,15 @@ package io.weaviate.spark
 
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.scalatest.BeforeAndAfter
-import technology.semi.weaviate.client.v1.graphql.query.fields.Field
-import technology.semi.weaviate.client.v1.schema.model.Property
-import technology.semi.weaviate.client.v1.schema.model.WeaviateClass
+import org.scalatest.funsuite.AnyFunSuite
+import technology.semi.weaviate.client.v1.schema.model.{Property, WeaviateClass}
 
-import java.util
 import scala.jdk.CollectionConverters.{mapAsJavaMapConverter, seqAsJavaListConverter}
+import scala.sys.process._
 
 case class Article(title: String, content: String, wordCount: Int)
+case class ArticleWithVector(title: String, content: String, wordCount: Int, vector: Array[Float])
 case class ArticleDifferentOrder(content: String,  wordCount: Int, title: String)
-
-import org.scalatest.funsuite.AnyFunSuite
-import scala.sys.process._
 
 class SparkIntegrationTest
   extends AnyFunSuite
@@ -169,6 +166,39 @@ class SparkIntegrationTest
       println("Error getting Articles" + results.getError.getMessages)
     }
 
+    val props = results.getResult.get(0).getProperties
+    assert(props.get("title") == "Sam")
+    assert(props.get("content") == "Sam and Sam")
+    assert(props.get("wordCount") == 3)
+    assert(results.getResult.size == 1)
+    deleteClass()
+  }
+
+  test("Article with Spark provided vectors") {
+    createClass()
+    import spark.implicits._
+    val id = java.util.UUID.randomUUID.toString
+    val articles = Seq(ArticleWithVector("Sam", "Sam and Sam", 3, Array(0.01f, 0.02f))).toDF
+
+    articles.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("className", "Article")
+      .option("vector", "vector")
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("Article")
+      .withVector()
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting Articles" + results.getError.getMessages)
+    }
+
+    assert(results.getResult.get(0).getVector sameElements Array(0.01f, 0.02f))
     val props = results.getResult.get(0).getProperties
     assert(props.get("title") == "Sam")
     assert(props.get("content") == "Sam and Sam")
