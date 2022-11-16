@@ -36,7 +36,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
 
   private def getWeaviateBuilderFromRecord(record: InternalRow): WeaviateObjectBuilder= {
     val properties = scala.collection.mutable.Map[String, AnyRef]()
-    val builder: WeaviateObject.WeaviateObjectBuilder = new WeaviateObjectBuilder()
+    val builder = WeaviateObject.builder()
     schema.zipWithIndex.foreach(field =>
       field._1.name match {
         case weaviateOptions.vector => builder.vector(record.getArray(field._2).toArray(FloatType))
