@@ -48,6 +48,8 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     schema.zipWithIndex.foreach(field => {
       if (field._1.name == weaviateOptions.id) {
         builder = builder.id(record.getString(field._2))
+      } else if (field._1.name == weaviateOptions.vector) {
+        builder = builder.vector(record.getArray(field._2).toFloatArray())
       } else {
         properties(field._1.name) = getValueFromField(field._2, record, field._1.dataType)
       }

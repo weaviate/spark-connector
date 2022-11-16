@@ -11,6 +11,7 @@ import scala.jdk.CollectionConverters.{mapAsJavaMapConverter, seqAsJavaListConve
 
 case class Article(title: String, content: String, wordCount: Int)
 case class ArticleWithID(id: String, title: String, content: String, wordCount: Int)
+case class ArticleWithVector(title: String, content: String, wordCount: Int, vector: Array[Float])
 
 import org.scalatest.funsuite.AnyFunSuite
 import scala.sys.process._
@@ -174,6 +175,38 @@ class SparkIntegrationTest
     val props = results.getResult.get(0).getProperties
     assert(results.getResult.get(0).getId == id)
     assert(props.get("title") == "Sam")
+    assert(props.get("title") == "Sam")
+    assert(props.get("content") == "Sam and Sam")
+    assert(props.get("wordCount") == 3)
+    assert(results.getResult.size == 1)
+    deleteClass()
+  }
+
+  test("Article with Spark provided vectors") {
+    createClass()
+    import spark.implicits._
+    val id = java.util.UUID.randomUUID.toString
+    val articles = Seq(ArticleWithVector("Sam", "Sam and Sam", 3, Array(0.01f, 0.02f))).toDF
+
+    articles.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("className", "Article")
+      .option("vector", "vector")
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("Article")
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting Articles" + results.getError.getMessages)
+    }
+
+    assert(results.getResult.get(0).getVector == Array(0.01f, 0.02f))
+    val props = results.getResult.get(0).getProperties
     assert(props.get("title") == "Sam")
     assert(props.get("content") == "Sam and Sam")
     assert(props.get("wordCount") == 3)
