@@ -1,13 +1,11 @@
 package io.weaviate.spark
 
-
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
 import org.apache.spark.sql.types._
 import technology.semi.weaviate.client.v1.data.model.WeaviateObject
 
 import java.util
-import scala.collection.JavaConverters.{mutableMapAsJavaMapConverter => _, _}
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
 
