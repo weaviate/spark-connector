@@ -1,5 +1,6 @@
 package io.weaviate.spark
 
+import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
@@ -15,6 +16,8 @@ case class ArticleWithVector(title: String, content: String, wordCount: Int, vec
 case class ArticleDifferentOrder(content: String, wordCount: Int, title: String)
 
 case class ArticleWithID(idCol: String, title: String, content: String, wordCount: Int)
+
+case class ArticleWithExtraCols(title: String, author: String, content: String, wordCount: Int, ifpaRank: Int)
 
 class SparkIntegrationTest
   extends AnyFunSuite
@@ -241,4 +244,19 @@ class SparkIntegrationTest
     assert(results.getResult.size == 1)
   }
 
+  test("Article with extra columns") {
+    createClass()
+    import spark.implicits._
+    val articles = Seq(ArticleWithExtraCols("Sam", "Big Dog", "Sam and Sam", 3, 1900)).toDF
+
+    assertThrows[AnalysisException] {
+      articles.write
+        .format("io.weaviate.spark.Weaviate")
+        .option("scheme", "http")
+        .option("host", "localhost:8080")
+        .option("className", "Article")
+        .mode("append")
+        .save()
+    }
+  }
 }
