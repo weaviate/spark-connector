@@ -191,6 +191,7 @@ class SparkIntegrationTest
 
     val results = client.data().objectsGetter()
       .withClassName("Article")
+      .withVector()
       .run()
 
     if (results.hasErrors) {
