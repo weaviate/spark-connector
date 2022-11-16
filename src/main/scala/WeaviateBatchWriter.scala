@@ -7,6 +7,7 @@ case class WeaviateBatchWriter(weaviateOptions: WeaviateOptions, schema: StructT
   override def createBatchWriterFactory(info: PhysicalWriteInfo): DataWriterFactory = {
     WeaviateDataWriterFactory(weaviateOptions, schema)
   }
+
   override def abort(messages: Array[WriterCommitMessage]): Unit = {}
   override def commit(messages: Array[WriterCommitMessage]): Unit = {}
 }

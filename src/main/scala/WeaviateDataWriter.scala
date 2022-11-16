@@ -1,32 +1,36 @@
 package io.weaviate.spark
 
-
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
 import org.apache.spark.sql.types._
+import technology.semi.weaviate.client.v1.data.model.WeaviateObject
 
 import java.util
+import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
 
 case class WeaviateCommitMessage(msg: String) extends WriterCommitMessage
 
 case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructType) extends DataWriter[InternalRow] with Serializable {
+  var batch = new ListBuffer[WeaviateObject]
 
   override def write(record: InternalRow): Unit = {
-    println("connecting to weaviate")
-    val client = weaviateOptions.getClient()
+    val obj = WeaviateObject.builder.className(weaviateOptions.className)
+      .properties(getPropertiesFromRecord(record)).build
+    batch += obj
 
-    val properties = getPropertiesFromRecord(record)
-    val results = client
-      .data()
-      .creator()
-      .withProperties(properties)
-      .withClassName(weaviateOptions.className)
-      .run()
+    if (batch.size >= weaviateOptions.batchSize) writeBatch
+  }
+
+  def writeBatch(): Unit = {
+    val client = weaviateOptions.getClient()
+    val results = client.batch().objectsBatcher().withObjects(batch.toList: _*).run()
+
     if (results.hasErrors) {
-      println("insert error" + results.getError.getMessages)
+      println("batch error" + results.getError.getMessages)
     }
-    println("Results: " + results.toString)
+    println("Writing batch successful. Results: " + results.getResult)
+    batch.clear()
   }
 
   def getValueFromField(index: Int, record: InternalRow, dataType: DataType): AnyRef = {
@@ -49,10 +53,17 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
   }
 
   override def close(): Unit = {
+    // TODO add logic for closing
     println("closed")
   }
-  override def commit(): WriterCommitMessage = WeaviateCommitMessage("yo")
+
+  override def commit(): WriterCommitMessage = {
+    writeBatch()
+    WeaviateCommitMessage("yo")
+  }
+
   override def abort(): Unit = {
+    // TODO rollback previously written batch results if issue occured
     println("aborted")
   }
 }
