@@ -57,7 +57,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
   }
 
   override def close(): Unit = {
-    writeBatch()
+    // TODO add logic for closing
     logger.info("closed")
   }
 
