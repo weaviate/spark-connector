@@ -17,5 +17,3 @@ jobs:
           java-version: 11
       - name: Build, Unit Test and Scala Spark Integration tests
         run: sbt -v +test
-      - name: Run docker and jar integration tests
-        run: bash run-tests.sh
