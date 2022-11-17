@@ -1,6 +1,6 @@
 package io.weaviate.spark
 
-import org.apache.logging.log4j.{LogManager, Logger}
+import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
 import org.apache.spark.sql.types._
@@ -11,8 +11,8 @@ import scala.jdk.CollectionConverters._
 
 case class WeaviateCommitMessage(msg: String) extends WriterCommitMessage
 
-case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructType) extends DataWriter[InternalRow] with Serializable {
-  val logger: Logger = LogManager.getLogger(this.getClass.getName)
+case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructType)
+  extends DataWriter[InternalRow] with Serializable with Logging {
   var batch = new mutable.ListBuffer[WeaviateObject]
 
   override def write(record: InternalRow): Unit = {
@@ -26,9 +26,9 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     val results = client.batch().objectsBatcher().withObjects(batch.toList: _*).run()
 
     if (results.hasErrors) {
-      logger.error("batch error" + results.getError.getMessages)
+      logError("batch error" + results.getError.getMessages)
     }
-    logger.info("Writing batch successful. Results: " + results.getResult)
+    logInfo("Writing batch successful. Results: " + results.getResult)
     batch.clear()
   }
 
@@ -58,7 +58,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
 
   override def close(): Unit = {
     // TODO add logic for closing
-    logger.info("closed")
+    logInfo("closed")
   }
 
   override def commit(): WriterCommitMessage = {
@@ -68,6 +68,6 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
 
   override def abort(): Unit = {
     // TODO rollback previously written batch results if issue occured
-    logger.error("Aborted data write")
+    logError("Aborted data write")
   }
 }
