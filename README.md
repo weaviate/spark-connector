@@ -1,20 +1,6 @@
 # Weaviate Spark Connector
 For use in Spark ETLs to populate a Weaviate vector database.
 
-## Compiling
-This repository uses [SBT](https://www.scala-sbt.org/) to compile the code. SBT can be installed on MacOS
-following the instructions [here](https://www.scala-sbt.org/1.x/docs/Setup.html).
-
-You will also need Java 8+ and Scala 2.12 installed. The easiest way to get everything set up is to install IntelliJ.
-
-To compile the package simply run `sbt compile` to ensure that you have everything needed to run the Spark connector.
-
-## Running the Tests
-The unit and integration tests can be run via `sbt test`. 
-
-The integration tests stand up a local Weaviate instance running in docker and then run the 
-Apache Spark code in a separate docker container. You will need to have docker running to run all tests.
-
 ## Usage
 With this package loading data from Spark is as easy as this!
 
@@ -82,6 +68,22 @@ To run on Databricks simply upload the jar file to your cluster in the libraries
 <img src="readme-assets/install-image.png">
 After installation your cluster page should look something like this.
 <img src="readme-assets/libraries-image.png">
+
+## Developer
+### Compiling
+This repository uses [SBT](https://www.scala-sbt.org/) to compile the code. SBT can be installed on MacOS
+following the instructions [here](https://www.scala-sbt.org/1.x/docs/Setup.html).
+
+You will also need Java 8+ and Scala 2.12 installed. The easiest way to get everything set up is to install IntelliJ.
+
+To compile the package simply run `sbt compile` to ensure that you have everything needed to run the Spark connector.
+
+### Running the Tests
+The unit and integration tests can be run via `sbt test`. 
+
+The integration tests stand up a local Weaviate instance running in docker and then run the 
+Apache Spark code in a separate docker container. You will need to have docker running to run all tests.
+
 
 ## Trying it out Locally in Docker
 ```
