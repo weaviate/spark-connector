@@ -1,6 +1,42 @@
 # Weaviate Spark Connector
 For use in Spark ETLs to populate a Weaviate vector database.
 
+Status: Alhpa, data might not always get written to Weaviate so
+verify your data was actually written to Weaviate.
+
+## Installation
+You can choose one of the following options to install the Spark Weaviate Connector:
+
+### Download JAR from GitHub
+You can download the latest JAR from [GitHub releases here](https://github.com/semi-technologies/weaviate-spark-connector/releases/latest).
+
+### Building the JAR yourself
+To use in your own Spark job you will first need to build the fat jar of the package by running
+`sbt assembly` which will create the artifact in
+`./target/scala-2.12/weaviate-spark-connector-assembly-0.1.0-SNAPSHOT.jar`.
+
+### Using the JAR in Spark
+You can configure spark-shell or tools like spark-submit to use the JAR like this:
+```shell
+spark-shell --jars weaviate-spark-connector-assembly-0.1.0-SNAPSHOT.jar
+```
+
+### Using the JAR in Databricks
+To run on Databricks simply upload the jar file to your cluster in the libraries tab as in the below image.
+<img src="readme-assets/install-image.png">
+After installation your cluster page should look something like this.
+<img src="readme-assets/libraries-image.png">
+
+### Using Maven Central Repository
+You can also use Maven to include the Weaviate Spark Connector as dependency in your
+Spark application. 
+
+COMING SOON
+
+### Using sbt
+COMING soon
+
+
 ## Usage
 With this package loading data from Spark is as easy as this!
 
@@ -55,20 +91,6 @@ error if exists write semantics.
 
 Currently only batch operations are supported. We do not yet support streaming writes.
 
-## Installing in Spark
-### Install from Maven Central Repositor
-COMING SOON
-### Install Manually
-To use in your own Spark job you will first need to build the fat jar of the package by running
-`sbt assembly` which will create the artifact in `./target/scala-2.12/weaviate-spark-connector-assembly-0.1.0-SNAPSHOT.jar`.
-
-You will need to then start your Spark job with the jar. This can be done via spark-submit with the `--jars` option.
-
-To run on Databricks simply upload the jar file to your cluster in the libraries tab as in the below image.
-<img src="readme-assets/install-image.png">
-After installation your cluster page should look something like this.
-<img src="readme-assets/libraries-image.png">
-
 ## Developer
 ### Compiling
 This repository uses [SBT](https://www.scala-sbt.org/) to compile the code. SBT can be installed on MacOS
@@ -91,7 +113,9 @@ sbt assembly
 docker build -t spark-with-weaviate .
 docker run -it spark-with-weaviate /opt/spark/bin/spark-shell
 case class Article (title: String, content: String)
-val articles = Seq( Article("Sam", "Sam"))
-val ds = articles.toDF
-ds.write.format("io.weaviate.spark.Weaviate").mode("append").save()
+val articles = Seq( Article("Sam", "Sam")).toDF
+articles.write.format("io.weaviate.spark.Weaviate")
+  .option("scheme", "http")
+  .option("host", "localhost:8080")
+  .mode("append").save()
 ```
