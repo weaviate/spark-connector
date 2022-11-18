@@ -1,7 +1,7 @@
 # Weaviate Spark Connector
 For use in Spark ETLs to populate a Weaviate vector database.
 
-Status: Alhpa, data might not always get written to Weaviate so
+Status: Alpha, data might not always get written to Weaviate so
 verify your data was actually written to Weaviate.
 
 ## Installation
