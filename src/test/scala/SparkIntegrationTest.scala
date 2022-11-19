@@ -19,6 +19,8 @@ case class ArticleWithID(idCol: String, title: String, content: String, wordCoun
 
 case class ArticleWithExtraCols(title: String, author: String, content: String, wordCount: Int, ifpaRank: Int)
 
+case class ArticleWithDate(title: String, content: String, wordCount: Int, date: java.sql.Date)
+
 class SparkIntegrationTest
   extends AnyFunSuite
     with SparkSessionTestWrapper
@@ -33,32 +35,34 @@ class SparkIntegrationTest
 
   var retries = 3
 
-  def createClass(): Unit = {
+  def createClass(additionalProperties: Property*): Unit = {
+    val properties = Seq(
+      Property.builder()
+        .dataType(List[String]("string").asJava)
+        .name("title")
+        .build(),
+      Property.builder()
+        .dataType(List[String]("string").asJava)
+        .name("content")
+        .build(),
+      Property.builder()
+        .dataType(List[String]("int").asJava)
+        .name("wordCount")
+        .build(),
+    ) ++ additionalProperties
+    println(properties.map(_.getName))
     val clazz = WeaviateClass.builder.className("Article")
       .description("Article test class")
-      .properties(Seq(
-        Property.builder()
-          .dataType(List[String]("string").asJava)
-          .name("title")
-          .build(),
-        Property.builder()
-          .dataType(List[String]("string").asJava)
-          .name("content")
-          .build(),
-        Property.builder()
-          .dataType(List[String]("int").asJava)
-          .name("wordCount")
-          .build()
-      ).asJava).build
+      .properties(properties.asJava).build
 
     val results = client.schema().classCreator().withClass(clazz).run
     if (results.hasErrors) {
       println("insert error" + results.getError.getMessages)
       if (retries > 1) {
         retries -= 1
-        println("Retrying to create class in 5 seconds..")
-        Thread.sleep(5000)
-        createClass()
+        println("Retrying to create class in 2 seconds..")
+        Thread.sleep(2000)
+        createClass(additionalProperties: _*)
       }
     }
     println("Results: " + results.toString)
@@ -118,6 +122,41 @@ class SparkIntegrationTest
     assert(props.get("content") == "Sam and Sam")
     assert(props.get("wordCount") == 3)
     assert(results.getResult.size == 1)
+    deleteClass()
+  }
+
+  test("Article with strings and date") {
+    createClass(Property.builder()
+      .dataType(List[String]("date").asJava)
+      .name("date")
+      .build()
+    )
+    import spark.implicits._
+    val javaDate = java.sql.Date.valueOf("2022-11-18")
+    val articles = Seq(ArticleWithDate("Sam", "Sam and Sam", 3, javaDate)).toDF
+
+    articles.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("className", "Article")
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("Article")
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting Articles" + results.getError.getMessages)
+    }
+
+    assert(results.getResult.size == 1)
+    val props = results.getResult.get(0).getProperties
+    assert(props.get("title") == "Sam")
+    assert(props.get("content") == "Sam and Sam")
+    assert(props.get("wordCount") == 3)
+    assert(props.get("date") == "2022-11-18T00:00:00Z")
     deleteClass()
   }
 
