@@ -32,7 +32,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     batch.clear()
   }
 
-  private def buildWeaviateObject(record: InternalRow): WeaviateObject = {
+  private[spark] def buildWeaviateObject(record: InternalRow): WeaviateObject = {
     var builder = WeaviateObject.builder.className(weaviateOptions.className)
     val properties = mutable.Map[String, AnyRef]()
     schema.zipWithIndex.foreach(field =>
@@ -53,6 +53,11 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       case FloatType => Float.box(record.getFloat(index))
       case ArrayType(FloatType, true) => record.getArray(index)
       case ArrayType(IntegerType, true) => record.getArray(index)
+      case DateType =>
+        // Weaviate requires an RFC3339 formatted string and Spark stores a long that
+        // contains the the days since EPOCH for DateType
+        val daysSinceEpoch = record.getLong(index)
+        java.time.LocalDate.ofEpochDay(daysSinceEpoch).toString + "T00:00:00Z"
     }
   }
 
