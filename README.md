@@ -117,6 +117,9 @@ shows how the connector infers the DataType:
 |vector  | Array[FloatType]  |   |
 |cross reference  | string  | Not supported yet |
 
+Please also take a look at the 
+[Weaviate data types docs](https://weaviate.io/developers/weaviate/current/schema/datatypes.html) and the
+[Spark DataType docs](https://spark.apache.org/docs/latest/sql-ref-datatypes.html).
 
 ## Developer
 ### Compiling
