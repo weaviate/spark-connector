@@ -1,6 +1,6 @@
 package io.weaviate.spark
 
-import org.apache.spark.sql.AnalysisException
+import org.apache.spark.sql.{AnalysisException, DataFrame}
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
@@ -9,17 +9,6 @@ import technology.semi.weaviate.client.v1.schema.model.{Property, WeaviateClass}
 import scala.jdk.CollectionConverters.{mapAsJavaMapConverter, seqAsJavaListConverter}
 import scala.sys.process._
 
-case class Article(title: String, content: String, wordCount: Int)
-
-case class ArticleWithVector(title: String, content: String, wordCount: Int, vector: Array[Float])
-
-case class ArticleDifferentOrder(content: String, wordCount: Int, title: String)
-
-case class ArticleWithID(idCol: String, title: String, content: String, wordCount: Int)
-
-case class ArticleWithExtraCols(title: String, author: String, content: String, wordCount: Int, ifpaRank: Int)
-
-case class ArticleWithDate(title: String, content: String, wordCount: Int, date: java.sql.Date)
 
 class SparkIntegrationTest
   extends AnyFunSuite
@@ -33,7 +22,7 @@ class SparkIntegrationTest
     (o: String) => println("out " + o),
     (e: String) => println("err " + e))
 
-  var retries = 3
+  var retries = 5
 
   def createClass(additionalProperties: Property*): Unit = {
     val properties = Seq(
@@ -60,12 +49,12 @@ class SparkIntegrationTest
       println("insert error" + results.getError.getMessages)
       if (retries > 1) {
         retries -= 1
-        println("Retrying to create class in 2 seconds..")
-        Thread.sleep(2000)
+        println("Retrying to create class in 1 seconds..")
+        Thread.sleep(1000)
         createClass(additionalProperties: _*)
       }
     }
-    println("Results: " + results.toString)
+    println("Results: " + results.getResult)
     retries = 3
   }
 
@@ -123,6 +112,53 @@ class SparkIntegrationTest
     assert(props.get("wordCount") == 3)
     assert(results.getResult.size == 1)
     deleteClass()
+  }
+
+  test("Article with all number datatypes") {
+    import spark.implicits._
+    case class TestCase(name: String, weaviateDataType: String, df: DataFrame, expected: Any)
+    val cases = Seq(
+      TestCase("byteTestCase", "int",
+        Seq(ArticleWithByte("Sam", "Sam and Sam", 3, 1.toByte)).toDF, 1.0),
+      TestCase("shortTestCase", "int",
+        Seq(ArticleWithShort("Sam", "Sam and Sam", 3, 1.toShort)).toDF, 1.0),
+      TestCase("longTestCase", "int",
+        Seq(ArticleWithLong("Sam", "Sam and Sam", 3, 1.toLong)).toDF, 1.0),
+      TestCase("floatTestCase", "number",
+        Seq(ArticleWithFloat("Sam", "Sam and Sam", 3, 0.01f)).toDF, 0.01f),
+      TestCase("doubleTestCase", "number",
+        Seq(ArticleWithDouble("Sam", "Sam and Sam", 3, 0.01)).toDF, 0.01),
+    )
+
+    for (c <- cases) {
+      println(s"Running test case: ${c.name}")
+      createClass(
+        Property.builder()
+          .dataType(List[String](c.weaviateDataType).asJava)
+          .name(c.name)
+          .build()
+      )
+
+      c.df.write
+        .format("io.weaviate.spark.Weaviate")
+        .option("scheme", "http")
+        .option("host", "localhost:8080")
+        .option("className", "Article")
+        .mode("append")
+        .save()
+      val results = client.data().objectsGetter()
+        .withClassName("Article")
+        .run()
+
+      if (results.hasErrors) {
+        println("Error getting Articles" + results.getError.getMessages)
+      }
+
+      assert(results.getResult.size == 1)
+      val props = results.getResult.get(0).getProperties
+      assert(props.get(c.name) == c.expected)
+      deleteClass()
+    }
   }
 
   test("Article with strings and date") {
@@ -299,3 +335,4 @@ class SparkIntegrationTest
     }
   }
 }
+

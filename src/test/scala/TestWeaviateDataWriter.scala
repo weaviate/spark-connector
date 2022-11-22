@@ -2,7 +2,7 @@ package io.weaviate.spark
 
 import org.apache.spark.sql.catalyst.expressions.{GenericInternalRow, Literal}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
-import org.apache.spark.sql.types.{DataTypes, Metadata, StructField, StructType}
+import org.apache.spark.sql.types.{DataType, DataTypes, Metadata, StringType, StructField, StructType}
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.apache.spark.unsafe.types.UTF8String
 import org.scalatest.funsuite.AnyFunSuite
@@ -54,4 +54,32 @@ class TestWeaviateDataWriter extends AnyFunSuite {
     assert(weaviateObject.getProperties.get("wordCount") == 5)
     assert(weaviateObject.getProperties.get("date") == "2022-11-18T00:00:00Z")
   }
+
+  test("Test Build Weaviate Object with Unsupported Data types") {
+    val options: CaseInsensitiveStringMap =
+      new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost", "className" -> "Article").asJava)
+    val weaviateOptions: WeaviateOptions = new WeaviateOptions(options)
+    case class TestCase(name: String, dataType: DataType, value: Any)
+    val cases = Seq(
+      TestCase("byte", DataTypes.ByteType, 1.toByte),
+      TestCase("short", DataTypes.ShortType, 1.toByte),
+      TestCase("long", DataTypes.LongType, 1.toByte),
+      TestCase("float", DataTypes.FloatType, 0.01f),
+      TestCase("map", DataTypes.createMapType(StringType, StringType, false), "test"),
+    )
+
+    for (c <- cases) {
+      val structFields = Array[StructField](
+        StructField(c.name, c.dataType, true, Metadata.empty),
+      )
+      val schema = StructType(structFields)
+      val dw = WeaviateDataWriter(weaviateOptions, schema)
+      val row = new GenericInternalRow(Array[Any](c.value))
+      assertThrows[SparkDataTypeNotSupported] {
+        dw.buildWeaviateObject(row)
+      }
+    }
+  }
+
+
 }

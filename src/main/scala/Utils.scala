@@ -12,8 +12,8 @@ object Utils {
       case "int[]" => DataTypes.createArrayType(DataTypes.IntegerType)
       case "boolean" => DataTypes.BooleanType
       case "boolean[]" => DataTypes.createArrayType(DataTypes.BooleanType)
-      case "number" => DataTypes.FloatType
-      case "number[]" => DataTypes.createArrayType(DataTypes.FloatType)
+      case "number" => DataTypes.DoubleType
+      case "number[]" => DataTypes.createArrayType(DataTypes.DoubleType)
       case "date" => DataTypes.DateType
       case "date[]" => DataTypes.createArrayType(DataTypes.DateType)
       case "text[]" => DataTypes.createArrayType(DataTypes.StringType)

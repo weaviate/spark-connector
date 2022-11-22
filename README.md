@@ -91,6 +91,36 @@ error if exists write semantics.
 
 Currently only batch operations are supported. We do not yet support streaming writes.
 
+### Spark to Weaviate DataType mappings
+The connector is able to automatically infer the correct Spark DataType based
+on your schema for the class in Weaviate. Your DataFrame column name
+needs to match the property name of your class in Weaviate. The table below
+shows how the connector infers the DataType:
+
+| Weaviate DataType | Spark DataType   | Notes |
+|--|---|---|
+|string  | StringType  |   |
+|string[]  | Array[StringType]  |   |
+|int  | IntegerType  | Weaviate only supports int32 for now. More info [here](https://github.com/semi-technologies/weaviate/issues/1563).  |
+|int[]  |  Array[IntegerType] |   |
+|boolean  | TBD  | Not supported yet   |
+|boolean[]  | TBD  | Not supported yet  |
+|number  | DoubleType  |   |
+|number[]  | Array[DoubleType]  |   |
+|date  | DateType  |   |
+|date[]  | Array[DateType]  |   |
+|text  | StringType  |   |
+|text[]  | StringType  |   |
+|geoCoordinates  | StringType  |   |
+|phoneNumber  | StringType  |   |
+|blob  | StringType  | Encode your blob as base64 string |
+|vector  | Array[FloatType]  |   |
+|cross reference  | string  | Not supported yet |
+
+Please also take a look at the 
+[Weaviate data types docs](https://weaviate.io/developers/weaviate/current/schema/datatypes.html) and the
+[Spark DataType docs](https://spark.apache.org/docs/latest/sql-ref-datatypes.html).
+
 ## Developer
 ### Compiling
 This repository uses [SBT](https://www.scala-sbt.org/) to compile the code. SBT can be installed on MacOS

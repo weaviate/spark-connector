@@ -46,18 +46,34 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
   }
 
   def getValueFromField(index: Int, record: InternalRow, dataType: DataType): AnyRef = {
-    // TODO add support for all types such as DateType etc
     dataType match {
       case StringType => record.getString(index)
+
+      case ByteType => throw new SparkDataTypeNotSupported(
+        "ByteType is not supported. Convert to Spark IntegerType instead")
+      case ShortType => throw new SparkDataTypeNotSupported(
+        "ShortType is not supported. Convert to Spark IntegerType instead")
       case IntegerType => Int.box(record.getInt(index))
-      case FloatType => Float.box(record.getFloat(index))
-      case ArrayType(FloatType, true) => record.getArray(index)
+      case LongType => throw new SparkDataTypeNotSupported(
+        "LongType is not supported. Convert to Spark IntegerType instead")
+      // FloatType is a 4 byte data structure however in Weaviate float64 is using
+      // 8 bytes. So the 2 are not compatible and DoubleType (8 bytes) must be used.
+      // inferSchema will always return DoubleType when it reads the Schema from Weaviate
+      case FloatType => throw new SparkDataTypeNotSupported(
+        "FloatType is not supported. Convert to Spark DoubleType instead")
+      case DoubleType => Double.box(record.getDouble(index))
+      case ArrayType(FloatType, true) => throw new SparkDataTypeNotSupported(
+        "Array of FloatType is not supported. Convert to Spark Array of DoubleType instead")
+      case ArrayType(DoubleType, true) => record.getArray(index)
       case ArrayType(IntegerType, true) => record.getArray(index)
+      case ArrayType(LongType, true) => throw new SparkDataTypeNotSupported(
+        "Array of LongType is not supported. Convert to Spark Array of IntegerType instead")
       case DateType =>
         // Weaviate requires an RFC3339 formatted string and Spark stores a long that
         // contains the the days since EPOCH for DateType
         val daysSinceEpoch = record.getLong(index)
         java.time.LocalDate.ofEpochDay(daysSinceEpoch).toString + "T00:00:00Z"
+      case default => throw new SparkDataTypeNotSupported(s"DataType ${default} is not supported by Weaviate")
     }
   }
 
