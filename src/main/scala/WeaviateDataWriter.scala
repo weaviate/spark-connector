@@ -11,8 +11,6 @@ import scala.jdk.CollectionConverters._
 
 case class WeaviateCommitMessage(msg: String) extends WriterCommitMessage
 
-class SparkDataTypeNotSupported(s: String) extends Exception(s) {}
-
 case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructType)
   extends DataWriter[InternalRow] with Serializable with Logging {
   var batch = new mutable.ListBuffer[WeaviateObject]
@@ -50,11 +48,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
   def getValueFromField(index: Int, record: InternalRow, dataType: DataType): AnyRef = {
     dataType match {
       case StringType => record.getString(index)
-      // Weaviate only has int datatype which is int64 however a bug
-      // is causing it to only support int32. See for reference:
-      // https://github.com/semi-technologies/weaviate/issues/1563
-      // use the IntegerType because that is represented as 32 bit integer in Java/Scala
-      // inferSchema will always return IntegerType when it reads the Schema from Weaviate
+
       case ByteType => throw new SparkDataTypeNotSupported(
         "ByteType is not supported. Convert to Spark IntegerType instead")
       case ShortType => throw new SparkDataTypeNotSupported(
@@ -68,8 +62,12 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       case FloatType => throw new SparkDataTypeNotSupported(
         "FloatType is not supported. Convert to Spark DoubleType instead")
       case DoubleType => Double.box(record.getDouble(index))
-      case ArrayType(FloatType, true) => record.getArray(index)
-      case ArrayType(LongType, true) => record.getArray(index)
+      case ArrayType(FloatType, true) => throw new SparkDataTypeNotSupported(
+        "Array of FloatType is not supported. Convert to Spark Array of DoubleType instead")
+      case ArrayType(DoubleType, true) => record.getArray(index)
+      case ArrayType(IntegerType, true) => record.getArray(index)
+      case ArrayType(LongType, true) => throw new SparkDataTypeNotSupported(
+        "Array of LongType is not supported. Convert to Spark Array of IntegerType instead")
       case DateType =>
         // Weaviate requires an RFC3339 formatted string and Spark stores a long that
         // contains the the days since EPOCH for DateType

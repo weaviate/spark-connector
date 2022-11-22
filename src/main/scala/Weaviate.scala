@@ -9,8 +9,7 @@ import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import java.util
 import scala.jdk.CollectionConverters._
 
-class WeaviateResultError(s: String) extends Exception(s) {}
-class WeaviateClassNotFoundError(s: String) extends Exception(s) {}
+
 
 class Weaviate extends TableProvider with DataSourceRegister {
   override def shortName(): String = "weaviate"
