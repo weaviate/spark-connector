@@ -28,7 +28,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     if (results.hasErrors) {
       logError("batch error" + results.getError.getMessages)
     }
-    logInfo("Writing batch successful. Results: " + results.getResult)
+    logInfo("Writing batch successful. IDs of inserted objects: " + results.getResult.map(_.getId).toList)
     batch.clear()
   }
 
