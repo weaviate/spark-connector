@@ -101,7 +101,7 @@ shows how the connector infers the DataType:
 |--|---|---|
 |string  | StringType  |   |
 |string[]  | Array[StringType]  |   |
-|int  | IntegerType  | Weaviate only supports int32 for now. More info (here)[https://github.com/semi-technologies/weaviate/issues/1563].  |
+|int  | IntegerType  | Weaviate only supports int32 for now. More info [here](https://github.com/semi-technologies/weaviate/issues/1563).  |
 |int[]  |  Array[IntegerType] |   |
 |boolean  | TBD  | Not supported yet   |
 |boolean[]  | TBD  | Not supported yet  |
