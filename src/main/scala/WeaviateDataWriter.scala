@@ -42,6 +42,9 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
         case _ => properties(field._1.name) = getValueFromField(field._2, record, field._1.dataType)
       }
     )
+    if (weaviateOptions.id == null){
+      builder.id(java.util.UUID.randomUUID.toString)
+    }
     builder.properties(properties.asJava).build
   }
 
