@@ -21,3 +21,5 @@ case class ArticleWithLong(title: String, content: String, wordCount: Int, longT
 case class ArticleWithDouble(title: String, content: String, wordCount: Int, doubleTestCase: Double)
 
 case class ArticleWithFloat(title: String, content: String, wordCount: Int, floatTestCase: Float)
+
+case class ArticleWithBoolean(title: String, content: String, wordCount: Int, boolTestCase: Boolean)

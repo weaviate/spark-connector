@@ -48,7 +48,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
   def getValueFromField(index: Int, record: InternalRow, dataType: DataType): AnyRef = {
     dataType match {
       case StringType => record.getString(index)
-
+      case BooleanType => Boolean.box(record.getBoolean(index))
       case ByteType => throw new SparkDataTypeNotSupported(
         "ByteType is not supported. Convert to Spark IntegerType instead")
       case ShortType => throw new SparkDataTypeNotSupported(
