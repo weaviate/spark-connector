@@ -21,14 +21,19 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     if (batch.size >= weaviateOptions.batchSize) writeBatch()
   }
 
-  def writeBatch(): Unit = {
+  def writeBatch(retries: Int = 2): Unit = {
     val client = weaviateOptions.getClient()
     val results = client.batch().objectsBatcher().withObjects(batch.toList: _*).run()
 
     if (results.hasErrors) {
-      logError("batch error" + results.getError.getMessages)
+      logError(s"batch error: ${results.getError.getMessages}")
+      if (retries > 0) {
+        logInfo(s"Retrying batch in 2 seconds. Batch has following IDs: ${batch.map(_.getId).toList}")
+        Thread.sleep(2000)
+        writeBatch(retries - 1)
+      }
     }
-    logInfo("Writing batch successful. IDs of inserted objects: " + results.getResult.map(_.getId).toList)
+    logInfo(s"Writing batch successful. IDs of inserted objects: ${results.getResult.map(_.getId).toList}")
     batch.clear()
   }
 
@@ -42,7 +47,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
         case _ => properties(field._1.name) = getValueFromField(field._2, record, field._1.dataType)
       }
     )
-    if (weaviateOptions.id == null){
+    if (weaviateOptions.id == null) {
       builder.id(java.util.UUID.randomUUID.toString)
     }
     builder.properties(properties.asJava).build
