@@ -103,8 +103,8 @@ shows how the connector infers the DataType:
 |string[]  | Array[StringType]  |   |
 |int  | IntegerType  | Weaviate only supports int32 for now. More info [here](https://github.com/semi-technologies/weaviate/issues/1563).  |
 |int[]  |  Array[IntegerType] |   |
-|boolean  | TBD  | Not supported yet   |
-|boolean[]  | TBD  | Not supported yet  |
+|boolean  | BooleanType  |    |
+|boolean[]  | Array[BooleanType]  |  |
 |number  | DoubleType  |   |
 |number[]  | Array[DoubleType]  |   |
 |date  | DateType  |   |

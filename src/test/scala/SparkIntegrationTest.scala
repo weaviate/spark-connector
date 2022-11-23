@@ -114,7 +114,7 @@ class SparkIntegrationTest
     deleteClass()
   }
 
-  test("Article with all number datatypes") {
+  test("Article with all datatypes") {
     import spark.implicits._
     case class TestCase(name: String, weaviateDataType: String, df: DataFrame, expected: Any)
     val cases = Seq(
@@ -128,6 +128,8 @@ class SparkIntegrationTest
         Seq(ArticleWithFloat("Sam", "Sam and Sam", 3, 0.01f)).toDF, 0.01f),
       TestCase("doubleTestCase", "number",
         Seq(ArticleWithDouble("Sam", "Sam and Sam", 3, 0.01)).toDF, 0.01),
+      TestCase("boolTestCase", "boolean",
+        Seq(ArticleWithBoolean("Sam", "Sam and Sam", 3, true)).toDF, true),
     )
 
     for (c <- cases) {
