@@ -24,16 +24,17 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
   def writeBatch(retries: Int = 2): Unit = {
     val client = weaviateOptions.getClient()
     val results = client.batch().objectsBatcher().withObjects(batch.toList: _*).run()
+    val IDs = batch.map(_.getId).toList
 
     if (results.hasErrors) {
       logError(s"batch error: ${results.getError.getMessages}")
       if (retries > 0) {
-        logInfo(s"Retrying batch in 2 seconds. Batch has following IDs: ${batch.map(_.getId).toList}")
+        logInfo(s"Retrying batch in 2 seconds. Batch has following IDs: ${IDs}")
         Thread.sleep(2000)
         writeBatch(retries - 1)
       }
     }
-    logInfo(s"Writing batch successful. IDs of inserted objects: ${results.getResult.map(_.getId).toList}")
+    logInfo(s"Writing batch successful. IDs of inserted objects: ${IDs}")
     batch.clear()
   }
 
