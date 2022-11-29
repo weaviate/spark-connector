@@ -21,7 +21,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     if (batch.size >= weaviateOptions.batchSize) writeBatch()
   }
 
-  def writeBatch(retries: Int = 2): Unit = {
+  def writeBatch(retries: Int = weaviateOptions.retries): Unit = {
     val client = weaviateOptions.getClient()
     val results = client.batch().objectsBatcher().withObjects(batch.toList: _*).run()
     val IDs = batch.map(_.getId).toList
