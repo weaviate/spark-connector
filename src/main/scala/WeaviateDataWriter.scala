@@ -29,7 +29,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     if (results.hasErrors) {
       logError(s"batch error: ${results.getError.getMessages}")
       if (retries > 0) {
-        logInfo(s"Retrying batch in 2 seconds. Batch has following IDs: ${IDs}")
+        logInfo(s"Retrying batch in ${weaviateOptions.retriesBackoff} seconds. Batch has following IDs: ${IDs}")
         Thread.sleep(weaviateOptions.retriesBackoff * 1000)
         writeBatch(retries - 1)
       }
