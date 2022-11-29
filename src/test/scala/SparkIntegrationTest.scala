@@ -1,92 +1,32 @@
 package io.weaviate.spark
 
 import org.apache.spark.sql.{AnalysisException, DataFrame}
-import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
 import technology.semi.weaviate.client.v1.schema.model.{Property, WeaviateClass}
 
 import scala.jdk.CollectionConverters.{mapAsJavaMapConverter, seqAsJavaListConverter}
-import scala.sys.process._
 
 
 class SparkIntegrationTest
   extends AnyFunSuite
     with SparkSessionTestWrapper
     with BeforeAndAfter {
-  val options: CaseInsensitiveStringMap =
-    new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost:8080").asJava)
-  val weaviateOptions: WeaviateOptions = new WeaviateOptions(options)
-  val client = weaviateOptions.getClient()
-  val logger = ProcessLogger(
-    (o: String) => println("out " + o),
-    (e: String) => println("err " + e))
 
-  var retries = 5
-
-  def createClass(additionalProperties: Property*): Unit = {
-    val properties = Seq(
-      Property.builder()
-        .dataType(List[String]("string").asJava)
-        .name("title")
-        .build(),
-      Property.builder()
-        .dataType(List[String]("string").asJava)
-        .name("content")
-        .build(),
-      Property.builder()
-        .dataType(List[String]("int").asJava)
-        .name("wordCount")
-        .build(),
-    ) ++ additionalProperties
-    println(properties.map(_.getName))
-    val clazz = WeaviateClass.builder.className("Article")
-      .description("Article test class")
-      .properties(properties.asJava).build
-
-    val results = client.schema().classCreator().withClass(clazz).run
-    if (results.hasErrors) {
-      println("insert error" + results.getError.getMessages)
-      if (retries > 1) {
-        retries -= 1
-        println("Retrying to create class in 1 seconds..")
-        Thread.sleep(1000)
-        createClass(additionalProperties: _*)
-      }
-    }
-    println("Results: " + results.getResult)
-    retries = 3
-  }
-
-  def deleteClass(): Unit = {
-    val result = client.schema().classDeleter()
-      .withClassName("Article")
-      .run()
-    if (result.hasErrors) println("Error deleting class Article " + result.getError.getMessages)
-  }
+  val client = WeaviateDocker.client
 
   before {
-    val docker_run =
-      """docker run -d --name=weaviate-test-container-will-be-deleted
-    -p 8080:8080
-    -e QUERY_DEFAULTS_LIMIT=25
-    -e AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
-    -e DEFAULT_VECTORIZER_MODULE=none
-    -e CLUSTER_HOSTNAME=node1
-    -e PERSISTENCE_DATA_PATH=./data
-    semitechnologies/weaviate:1.16.1"""
-    val exit_code = docker_run ! logger
+    val exit_code = WeaviateDocker.start()
     assert(exit_code == 0)
   }
 
   after {
-    "docker stop weaviate-test-container-will-be-deleted" ! logger
-    "docker rm weaviate-test-container-will-be-deleted" ! logger
+    WeaviateDocker.stop()
   }
 
 
   test("Article with strings and int") {
-    createClass()
+    WeaviateDocker.createClass()
     import spark.implicits._
     val articles = Seq(Article("Sam", "Sam and Sam", 3)).toDF
 
@@ -111,7 +51,7 @@ class SparkIntegrationTest
     assert(props.get("content") == "Sam and Sam")
     assert(props.get("wordCount") == 3)
     assert(results.getResult.size == 1)
-    deleteClass()
+    WeaviateDocker.deleteClass()
   }
 
   test("Article with all datatypes") {
@@ -134,7 +74,7 @@ class SparkIntegrationTest
 
     for (c <- cases) {
       println(s"Running test case: ${c.name}")
-      createClass(
+      WeaviateDocker.createClass(
         Property.builder()
           .dataType(List[String](c.weaviateDataType).asJava)
           .name(c.name)
@@ -159,12 +99,12 @@ class SparkIntegrationTest
       assert(results.getResult.size == 1)
       val props = results.getResult.get(0).getProperties
       assert(props.get(c.name) == c.expected)
-      deleteClass()
+      WeaviateDocker.deleteClass()
     }
   }
 
   test("Article with strings and date") {
-    createClass(Property.builder()
+    WeaviateDocker.createClass(Property.builder()
       .dataType(List[String]("date").asJava)
       .name("date")
       .build()
@@ -195,11 +135,11 @@ class SparkIntegrationTest
     assert(props.get("content") == "Sam and Sam")
     assert(props.get("wordCount") == 3)
     assert(props.get("date") == "2022-11-18T00:00:00Z")
-    deleteClass()
+    WeaviateDocker.deleteClass()
   }
 
   test("Test empty strings and large batch") {
-    createClass()
+    WeaviateDocker.createClass()
     import spark.implicits._
     val articles = (1 to 22).map(_ => Article("", "", 0)).toDF
 
@@ -226,11 +166,11 @@ class SparkIntegrationTest
       assert(obj.getProperties.get("content") == "")
       assert(obj.getProperties.get("title") == "")
     })
-    deleteClass()
+    WeaviateDocker.deleteClass()
   }
 
   test("Article different order") {
-    createClass()
+    WeaviateDocker.createClass()
     import spark.implicits._
     val articles = Seq(ArticleDifferentOrder("Sam and Sam", 3, "Sam")).toDF
 
@@ -255,11 +195,11 @@ class SparkIntegrationTest
     assert(props.get("content") == "Sam and Sam")
     assert(props.get("wordCount") == 3)
     assert(results.getResult.size == 1)
-    deleteClass()
+    WeaviateDocker.deleteClass()
   }
 
   test("Article with Spark provided vectors") {
-    createClass()
+    WeaviateDocker.createClass()
     import spark.implicits._
     val articles = Seq(ArticleWithVector("Sam", "Sam and Sam", 3, Array(0.01f, 0.02f))).toDF
 
@@ -287,11 +227,11 @@ class SparkIntegrationTest
     assert(props.get("content") == "Sam and Sam")
     assert(props.get("wordCount") == 3)
     assert(results.getResult.size == 1)
-    deleteClass()
+    WeaviateDocker.deleteClass()
   }
 
   test("Article with custom IDs") {
-    createClass()
+    WeaviateDocker.createClass()
     import spark.implicits._
     val id = java.util.UUID.randomUUID.toString
     val articles = Seq(ArticleWithID(id, "Sam", "Sam and Sam", 3)).toDF
@@ -322,7 +262,7 @@ class SparkIntegrationTest
   }
 
   test("Article with extra columns") {
-    createClass()
+    WeaviateDocker.createClass()
     import spark.implicits._
     val articles = Seq(ArticleWithExtraCols("Sam", "Big Dog", "Sam and Sam", 3, 1900)).toDF
 
