@@ -31,6 +31,6 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           generateReleasenotes: true
-          name: Release ${{ github.ref }}
+          name: Release ${{ env.version }}
           artifacts: "./target/scala-2.12/weaviate-spark-connector-assembly${{ env.version }}.jar"
           artifactContentType: application/java-archive
