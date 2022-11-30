@@ -13,18 +13,19 @@ case class WeaviateCommitMessage(msg: String) extends WriterCommitMessage
 
 case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructType)
   extends DataWriter[InternalRow] with Serializable with Logging {
-  var batch = new mutable.ListBuffer[WeaviateObject]
+  var batch = mutable.Map[String, WeaviateObject]()
 
   override def write(record: InternalRow): Unit = {
-    batch += buildWeaviateObject(record)
+    val weaviateObject = buildWeaviateObject(record)
+    batch += (weaviateObject.getId -> weaviateObject)
 
     if (batch.size >= weaviateOptions.batchSize) writeBatch()
   }
 
   def writeBatch(retries: Int = weaviateOptions.retries): Unit = {
     val client = weaviateOptions.getClient()
-    val results = client.batch().objectsBatcher().withObjects(batch.toList: _*).run()
-    val IDs = batch.map(_.getId).toList
+    val results = client.batch().objectsBatcher().withObjects(batch.values.toList: _*).run()
+    val IDs = batch.keys.toList
 
     if (results.hasErrors) {
       logError(s"batch error: ${results.getError.getMessages}")
@@ -34,8 +35,19 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
         writeBatch(retries - 1)
       }
     }
-    logInfo(s"Writing batch successful. IDs of inserted objects: ${IDs}")
-    batch.clear()
+
+    val (objectsWithSuccess, objectsWithError) = results.getResult.partition(_.getResult.getErrors == null)
+    if (objectsWithError.size > 0 && retries > 0) {
+      val errors = objectsWithError.map(obj => s"${obj.getId}: ${obj.getResult.getErrors.toString}")
+      val successIDs = objectsWithSuccess.map(_.getId).toList
+      logWarning(s"Successfully imported ${successIDs}. " +
+        s"Retrying objects with an error. Following objects in the batch upload had an error: ${errors}")
+      batch = batch -- successIDs
+      writeBatch(retries - 1)
+    } else {
+       logInfo(s"Writing batch successful. IDs of inserted objects: ${IDs}")
+       batch.clear()
+    }
   }
 
   private[spark] def buildWeaviateObject(record: InternalRow): WeaviateObject = {
