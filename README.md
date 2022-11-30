@@ -24,6 +24,7 @@ spark-shell --jars weaviate-spark-connector-assembly-0.1.0-SNAPSHOT.jar
 ### Using the JAR in Databricks
 To run on Databricks simply upload the jar file to your cluster in the libraries tab as in the below image.
 <img src="readme-assets/install-image.png">
+
 After installation your cluster page should look something like this.
 <img src="readme-assets/libraries-image.png">
 
