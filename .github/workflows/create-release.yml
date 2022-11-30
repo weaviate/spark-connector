@@ -32,5 +32,5 @@ jobs:
         with:
           generateReleasenotes: true
           name: Release ${{ env.version }}
-          artifacts: "./target/scala-2.12/weaviate-spark-connector-assembly${{ env.version }}.jar"
+          artifacts: "./target/scala-2.12/weaviate-spark-connector-assembly-${{ env.version }}.jar"
           artifactContentType: application/java-archive
