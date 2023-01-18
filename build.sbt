@@ -22,17 +22,23 @@ libraryDependencies ++= Seq(
 )
 
 
-ThisBuild / organization := "technology.semi.weaviate"
-ThisBuild / organizationName := "SeMI Technologies B.V."
-ThisBuild / organizationHomepage := Some(url("https://www.semi.technology"))
+ThisBuild / organization := "io.weaviate"
+ThisBuild / organizationName := "Weaviate B.V."
+ThisBuild / organizationHomepage := Some(url("https://weaviate.io"))
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
-    url("https://github.com/semi-technologies/weaviate-spark-connector/tree/main"),
-    "scm:git@github.com:semi-technologies/weaviate-spark-connector.git"
+    url("https://github.com/weaviate/spark-connector/tree/main"),
+    "scm:git@github.com:weaviate/spark-connector.git"
   )
 )
 ThisBuild / developers := List(
+  Developer(
+    id = "aliszka",
+    name = "Andrzej Liszka",
+    email = "andrzej@weaviate.io",
+    url = url("https://github.com/aliszka")
+  ),
   Developer(
     id = "samos123",
     name = "Sam Stoelinga",
@@ -44,14 +50,14 @@ ThisBuild / developers := List(
     name = "Sam Bean",
     email = "",
     url = url("https://github.com/sam-h-bean")
-  )
+  ),
 )
 
 ThisBuild / description := "Weaviate Spark Connector to use in Spark ETLs to populate a Weaviate vector database."
 ThisBuild / licenses := List(
-  "SeMI Technologies B.V. License" -> new URL("https://github.com/semi-technologies/weaviate-spark-connector/blob/main/LICENSE")
+  "Weaviate B.V. License" -> new URL("https://github.com/weaviate/spark-connector/blob/main/LICENSE")
 )
-ThisBuild / homepage := Some(url("https://github.com/semi-technologies/weaviate-spark-connector"))
+ThisBuild / homepage := Some(url("https://github.com/weaviate/spark-connector"))
 
 // Remove all additional repository other than Maven Central from POM
 pomIncludeRepository := { _ => false }
@@ -59,7 +65,7 @@ publishMavenStyle := true
 publishTo := sonatypePublishToBundle.value
 sonatypeCredentialHost := "s01.oss.sonatype.org"
 sonatypeRepository := "https://s01.oss.sonatype.org/service/local"
-sonatypeProfileName := "technology.semi"
+sonatypeProfileName := "io.weaviate"
 
 // Custom release process
 releaseProcess := Seq[ReleaseStep](

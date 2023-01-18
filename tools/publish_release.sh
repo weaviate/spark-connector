@@ -5,10 +5,10 @@ set -euo pipefail
 parent_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
 cd "$parent_path/.."
 
-##################################################
-# TODO
 # decrypt sonatype.sbt + passphrase.env + key.gpg
-##################################################
+gpg --quiet --batch --yes --decrypt --passphrase="$GPG_PASSPHRASE" \
+--output .secrets.tar .secrets.tar.gpg
+tar xvf .secrets.tar
 
 # import key
 gpg --batch --import key.gpg
@@ -24,4 +24,4 @@ sbt sonatypePrepare
 sbt sonatypeBundleUpload
 
 # upload artifact to sonatype and release
-# sonatypeBundleRelease
+sbt sonatypeBundleRelease

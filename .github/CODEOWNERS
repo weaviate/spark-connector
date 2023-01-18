@@ -1,0 +1,4 @@
+# Ci related folders
+/.github/ @weaviate/core
+/tools/ @weaviate/core
+.secrets.tar.gpg @weaviate/core

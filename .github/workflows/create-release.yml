@@ -1,16 +1,13 @@
 name: Create Release
 on:
-  pull_request:
   push:
-    # Sequence of patterns matched against refs/tags
+    # run only if a tag was pushed
     tags:
-      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
-env:
-  version: ${{ github.ref_name }}
+      - '**'
 jobs:
   release:
     name: Create Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v1
       - name: Setup JDK
@@ -18,22 +15,26 @@ jobs:
         with:
           distribution: temurin
           java-version: 11
-      - name: Run integration test to ensure release works
-        run: sbt -v +test
+      - name: Run integration tests to ensure release works
+        run: |
+          sbt -v +test
+      - name: Get release version
+        run: |
+          version=$(cat version.sbt | cut -d '"' -f2)
+          echo "version=$version" >> $GITHUB_ENV
       - name: Create jar with all dependencies included
         run: |
           sbt assembly
-          test -f ./target/scala-2.12/weaviate-spark-connector-assembly-${{ env.version }}.jar
-#      - name: Publish artifact to sonatype and release to maven repo
-#        env:
-#          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-#        run: |
-#          tools/publish_release.sh
-      - name: Create Release only if tag v* was pushed
-        if: startsWith(github.ref, 'refs/tags/v')
+          test -f ./target/scala-2.12/spark-connector-assembly-${{ env.version }}.jar
+      - name: Publish artifact to sonatype and release to maven repo
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          tools/publish_release.sh
+      - name: Create Release
         uses: ncipollo/release-action@v1
         with:
           generateReleasenotes: true
           name: Release ${{ env.version }}
-          artifacts: "./target/scala-2.12/weaviate-spark-connector-assembly-${{ env.version }}.jar"
+          artifacts: "./target/scala-2.12/spark-connector-assembly-${{ env.version }}.jar"
           artifactContentType: application/java-archive
