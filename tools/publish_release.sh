@@ -17,11 +17,11 @@ gpg --batch --import key.gpg
 source ./passphrase.env
 
 # sign artifact
-sbt publishSigned
+sbt +publishSigned
 
 # upload artifact to sonatype (to be replaced with 'sonatypeBundleRelease' later)
-sbt sonatypePrepare
-sbt sonatypeBundleUpload
+sbt +sonatypePrepare
+sbt +sonatypeBundleUpload
 
 # upload artifact to sonatype and release
-sbt sonatypeBundleRelease
+sbt +sonatypeBundleRelease

@@ -2,6 +2,8 @@ import ReleaseTransformations._
 
 ThisBuild / scalaVersion := "2.12.17"
 
+crossScalaVersions := Seq("2.12.17", "2.13.10")
+
 lazy val root = (project in file("."))
   .settings(
     name := "spark-connector",
@@ -11,13 +13,13 @@ lazy val root = (project in file("."))
 ThisBuild / scalafixDependencies += "org.scalalint" %% "rules" % "0.1.4"
 
 lazy val sparkVersion = "3.3.1"
-lazy val weaviateClientVersion = "3.4.2"
+lazy val weaviateClientVersion = "3.5.0"
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.2.14" % "test",
   "org.apache.spark" %% "spark-core" % sparkVersion % "provided,test",
   "org.apache.spark" %% "spark-sql" % sparkVersion % "provided,test",
   "org.apache.spark" %% "spark-catalyst" % sparkVersion % "provided,test",
-  "org.scala-lang.modules" %% "scala-collection-compat" % "2.8.1",
+  "org.scala-lang.modules" %% "scala-collection-compat" % "2.9.0",
   "technology.semi.weaviate" % "client" % weaviateClientVersion
 )
 

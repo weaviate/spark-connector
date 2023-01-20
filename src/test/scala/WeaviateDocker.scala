@@ -3,7 +3,7 @@ package io.weaviate.spark
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import technology.semi.weaviate.client.v1.schema.model.{Property, WeaviateClass}
 
-import scala.jdk.CollectionConverters.{mapAsJavaMapConverter, seqAsJavaListConverter}
+import scala.jdk.CollectionConverters._
 import scala.sys.process._
 
 object WeaviateDocker {
