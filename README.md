@@ -8,7 +8,7 @@ verify your data was actually written to Weaviate.
 You can choose one of the following options to install the Spark Weaviate Connector:
 
 ### Download JAR from GitHub
-You can download the latest JAR from [GitHub releases here](https://github.com/semi-technologies/weaviate-spark-connector/releases/latest).
+You can download the latest JAR from [GitHub releases here](https://github.com/weaviate/spark-connector/releases/latest).
 
 ### Building the JAR yourself
 To use in your own Spark job you will first need to build the fat jar of the package by running
@@ -102,7 +102,7 @@ shows how the connector infers the DataType:
 |--|---|---|
 |string  | StringType  |   |
 |string[]  | Array[StringType]  |   |
-|int  | IntegerType  | Weaviate only supports int32 for now. More info [here](https://github.com/semi-technologies/weaviate/issues/1563).  |
+|int  | IntegerType  | Weaviate only supports int32 for now. More info [here](https://github.com/weaviate/weaviate/issues/1563).  |
 |int[]  |  Array[IntegerType] |   |
 |boolean  | BooleanType  |    |
 |boolean[]  | Array[BooleanType]  |  |
