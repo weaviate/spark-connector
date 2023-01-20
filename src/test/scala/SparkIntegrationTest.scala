@@ -5,7 +5,7 @@ import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
 import technology.semi.weaviate.client.v1.schema.model.{Property, WeaviateClass}
 
-import scala.jdk.CollectionConverters.{mapAsJavaMapConverter, seqAsJavaListConverter}
+import scala.jdk.CollectionConverters._
 
 
 class SparkIntegrationTest

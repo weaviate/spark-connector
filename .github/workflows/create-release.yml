@@ -3,7 +3,7 @@ on:
   push:
     # run only if a tag was pushed
     tags:
-      - '**'
+      - 'v*'
 jobs:
   release:
     name: Create Release
@@ -24,8 +24,9 @@ jobs:
           echo "version=$version" >> $GITHUB_ENV
       - name: Create jar with all dependencies included
         run: |
-          sbt assembly
+          sbt +assembly
           test -f ./target/scala-2.12/spark-connector-assembly-${{ env.version }}.jar
+          test -f ./target/scala-2.13/spark-connector-assembly-${{ env.version }}.jar
       - name: Publish artifact to sonatype and release to maven repo
         env:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
@@ -36,5 +37,5 @@ jobs:
         with:
           generateReleasenotes: true
           name: Release ${{ env.version }}
-          artifacts: "./target/scala-2.12/spark-connector-assembly-${{ env.version }}.jar"
+          artifacts: "./target/scala-2.12/spark-connector-assembly-${{ env.version }}.jar,./target/scala-2.13/spark-connector-assembly-${{ env.version }}.jar"
           artifactContentType: application/java-archive
