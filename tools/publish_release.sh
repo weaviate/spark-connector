@@ -21,7 +21,7 @@ sbt +publishSigned
 
 # upload artifact to sonatype (to be replaced with 'sonatypeBundleRelease' later)
 sbt +sonatypePrepare
-sbt +sonatypeBundleUpload
+sbt sonatypeBundleUpload
 
 # upload artifact to sonatype and release
-sbt +sonatypeBundleRelease
+sbt sonatypeBundleRelease
