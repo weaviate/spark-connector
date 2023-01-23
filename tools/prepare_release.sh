@@ -22,4 +22,9 @@ if git rev-parse "$VERSION" >/dev/null 2>&1; then
   exit 1
 fi
 
+sed -i '' "s/^spark-shell --jars spark-connector-assembly-.*/spark-shell --jars spark-connector-assembly-$VERSION.jar/" README.md
+sed -i '' "s/^\`.\/target\/scala-2.12\/spark-connector-assembly-.*/\`.\/target\/scala-2.12\/spark-connector-assembly-$VERSION.jar/" README.md
+
+git commit -a -m "Setting version in README.md to $VERSION"
+
 sbt "release with-defaults release-version $VERSION"

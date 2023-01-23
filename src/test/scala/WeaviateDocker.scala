@@ -18,15 +18,16 @@ object WeaviateDocker {
   var retries = 5
 
   def start(): Int = {
+    val weaviateVersion = "1.17.1"
     val docker_run =
-      """docker run -d --name=weaviate-test-container-will-be-deleted
+      s"""docker run -d --name=weaviate-test-container-will-be-deleted
 -p 8080:8080
 -e QUERY_DEFAULTS_LIMIT=25
 -e AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
 -e DEFAULT_VECTORIZER_MODULE=none
 -e CLUSTER_HOSTNAME=node1
 -e PERSISTENCE_DATA_PATH=./data
-semitechnologies/weaviate:1.16.1"""
+semitechnologies/weaviate:$weaviateVersion"""
     val exit_code = docker_run ! logger
     exit_code
   }

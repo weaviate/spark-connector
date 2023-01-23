@@ -13,12 +13,12 @@ You can download the latest JAR from [GitHub releases here](https://github.com/w
 ### Building the JAR yourself
 To use in your own Spark job you will first need to build the fat jar of the package by running
 `sbt assembly` which will create the artifact in
-`./target/scala-2.12/weaviate-spark-connector-assembly-0.1.0-SNAPSHOT.jar`.
+`./target/scala-2.12/spark-connector-assembly-0.1.3.jar`.
 
 ### Using the JAR in Spark
 You can configure spark-shell or tools like spark-submit to use the JAR like this:
 ```shell
-spark-shell --jars weaviate-spark-connector-assembly-0.1.0-SNAPSHOT.jar
+spark-shell --jars spark-connector-assembly-0.1.3.jar
 ```
 
 ### Using the JAR in Databricks
@@ -30,13 +30,19 @@ After installation your cluster page should look something like this.
 
 ### Using Maven Central Repository
 You can also use Maven to include the Weaviate Spark Connector as dependency in your
-Spark application. 
-
-COMING SOON
+Spark application. See [here](https://mvnrepository.com/artifact/io.weaviate/spark-connector).
 
 ### Using sbt
-COMING soon
 
+Running cross versions tests:
+```shell
+sbt -v +test
+```
+
+Building `Scala 2.12` and `Scala 2.13` binaries:
+```shell
+sbt +assembly
+```
 
 ## Usage
 With this package loading data from Spark is as easy as this!
