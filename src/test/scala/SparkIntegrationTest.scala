@@ -1,11 +1,14 @@
 package io.weaviate.spark
 
-import org.apache.spark.sql.{AnalysisException, DataFrame}
+import java.io.File
+import org.apache.spark.sql.execution.streaming.MemoryStream
+import org.apache.spark.sql.{AnalysisException, DataFrame, Encoder, Encoders}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
 import technology.semi.weaviate.client.v1.schema.model.{Property, WeaviateClass}
 
 import scala.jdk.CollectionConverters._
+import scala.reflect.io.Directory
 
 
 class SparkIntegrationTest
@@ -52,6 +55,45 @@ class SparkIntegrationTest
     assert(props.get("wordCount") == 3)
     assert(results.getResult.size == 1)
     WeaviateDocker.deleteClass()
+  }
+
+  test("Article with strings and int Streaming Write") {
+    WeaviateDocker.createClass()
+    import spark.implicits._
+    implicit val articleEncoder: Encoder[Article] = Encoders.product[Article]
+    val inputStream: MemoryStream[Article] = new MemoryStream[Article](1, spark.sqlContext, Some(1))
+    val inputStreamDF = inputStream.toDF
+
+    val articles = Seq(Article("Sam", "Sam and Sam", 3))
+
+    val streamingWrite = inputStreamDF.writeStream
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("className", "Article")
+      .option("checkpointLocation", "/tmp/weaviate-spark-connector-test")
+      .outputMode("append")
+      .start()
+
+    inputStream.addData(articles)
+    streamingWrite.processAllAvailable()
+
+    val results = client.data().objectsGetter()
+      .withClassName("Article")
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting Articles" + results.getError.getMessages)
+    }
+
+    val props = results.getResult.get(0).getProperties
+    assert(props.get("title") == "Sam")
+    assert(props.get("content") == "Sam and Sam")
+    assert(props.get("wordCount") == 3)
+    assert(results.getResult.size == 1)
+    WeaviateDocker.deleteClass()
+    val dir = new Directory(new File("/tmp/weaviate-spark-connector-test"))
+    dir.deleteRecursively()
   }
 
   test("Article with all datatypes") {

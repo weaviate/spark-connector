@@ -14,6 +14,7 @@ case class WeaviateCluster(weaviateOptions: WeaviateOptions, schema: StructType)
     WeaviateWriteBuilder(weaviateOptions, schema)
   }
   override def capabilities(): util.Set[TableCapability] = Set(
-    TableCapability.BATCH_WRITE
+    TableCapability.BATCH_WRITE,
+    TableCapability.STREAMING_WRITE
   ).asJava
 }
