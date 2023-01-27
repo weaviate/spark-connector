@@ -169,6 +169,99 @@ class SparkIntegrationTest
     WeaviateDocker.deleteClass()
   }
 
+  test("Test dataset size equal batch size") {
+    WeaviateDocker.createClass()
+    import spark.implicits._
+    val articles = (1 to 10).map(_ => Article("", "", 0)).toDF
+
+    articles.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("className", "Article")
+      .option("batchSize", 10)
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("Article")
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting Articles" + results.getError.getMessages)
+    }
+    assert(results.getResult.size == 10)
+    val props = (0 to 10 - 1).map(i => results.getResult.get(i).getProperties)
+    results.getResult.forEach(obj => {
+      assert(obj.getProperties.get("wordCount") == 0)
+      assert(obj.getProperties.get("content") == "")
+      assert(obj.getProperties.get("title") == "")
+    })
+    WeaviateDocker.deleteClass()
+  }
+
+  test("Test dataset size being 1 less than batch size") {
+    WeaviateDocker.createClass()
+    import spark.implicits._
+    val articles = (1 to 9).map(_ => Article("", "", 0)).toDF
+
+    articles.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("className", "Article")
+      .option("batchSize", 9)
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("Article")
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting Articles" + results.getError.getMessages)
+    }
+    assert(results.getResult.size == 9)
+    val props = (0 to 9 - 1).map(i => results.getResult.get(i).getProperties)
+    results.getResult.forEach(obj => {
+      assert(obj.getProperties.get("wordCount") == 0)
+      assert(obj.getProperties.get("content") == "")
+      assert(obj.getProperties.get("title") == "")
+    })
+    WeaviateDocker.deleteClass()
+  }
+
+  test("Test dataset size being 1 more than batch size") {
+    WeaviateDocker.createClass()
+    import spark.implicits._
+    val articles = (1 to 11).map(_ => Article("", "", 0)).toDF
+
+    articles.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("className", "Article")
+      .option("batchSize", 11)
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("Article")
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting Articles" + results.getError.getMessages)
+    }
+    assert(results.getResult.size == 11)
+    val props = (0 to 11 - 1).map(i => results.getResult.get(i).getProperties)
+    results.getResult.forEach(obj => {
+      assert(obj.getProperties.get("wordCount") == 0)
+      assert(obj.getProperties.get("content") == "")
+      assert(obj.getProperties.get("title") == "")
+    })
+    WeaviateDocker.deleteClass()
+  }
+
   test("Article different order") {
     WeaviateDocker.createClass()
     import spark.implicits._
