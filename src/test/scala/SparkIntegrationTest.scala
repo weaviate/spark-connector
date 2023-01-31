@@ -57,6 +57,22 @@ class SparkIntegrationTest
     WeaviateDocker.deleteClass()
   }
 
+  test("Article with nulls") {
+    WeaviateDocker.createClass()
+    import spark.implicits._
+    val articles = Seq(Article("Sam", null, 3)).toDF
+
+    assertThrows[org.apache.spark.SparkException] {
+      articles.write
+        .format("io.weaviate.spark.Weaviate")
+        .option("scheme", "http")
+        .option("host", "localhost:8080")
+        .option("className", "Article")
+        .mode("append")
+        .save()
+    }
+  }
+
   test("Article with strings and int Streaming Write") {
     WeaviateDocker.createClass()
     import spark.implicits._
