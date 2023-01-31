@@ -24,4 +24,4 @@ case class ArticleWithFloat(title: String, content: String, wordCount: Int, floa
 
 case class ArticleWithBoolean(title: String, content: String, wordCount: Int, boolTestCase: Boolean)
 
-case class ArticleWithStringArray(title: String, content: String, wordCount: Int, keywords: Seq[String])
+case class ArticleWithStringArray(title: String, content: String, wordCount: Int, keywords: Array[String])

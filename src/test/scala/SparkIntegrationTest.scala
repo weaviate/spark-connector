@@ -180,15 +180,14 @@ class SparkIntegrationTest
     WeaviateDocker.deleteClass()
   }
 
-  test("Article with strings and date") {
+  test("Article with string sequences") {
     WeaviateDocker.createClass(Property.builder()
-      .dataType(List[String]("date").asJava)
-      .name("date")
+      .dataType(List[String]("string[]").asJava)
+      .name("keywords")
       .build()
     )
     import spark.implicits._
-    val javaDate = java.sql.Date.valueOf("2022-11-18")
-    val articles = Seq(ArticleWithStringArray("Sam", "Sam and Sam", 3, Seq("yo", "hey"))).toDF
+    val articles = Seq(ArticleWithStringArray("Sam", "Sam and Sam", 3, Array("yo", "hey"))).toDF
 
     articles.write
       .format("io.weaviate.spark.Weaviate")
