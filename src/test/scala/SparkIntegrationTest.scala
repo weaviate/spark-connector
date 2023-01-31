@@ -180,6 +180,41 @@ class SparkIntegrationTest
     WeaviateDocker.deleteClass()
   }
 
+  test("Article with strings and date") {
+    WeaviateDocker.createClass(Property.builder()
+      .dataType(List[String]("date").asJava)
+      .name("date")
+      .build()
+    )
+    import spark.implicits._
+    val javaDate = java.sql.Date.valueOf("2022-11-18")
+    val articles = Seq(ArticleWithStringArray("Sam", "Sam and Sam", 3, Seq("yo", "hey"))).toDF
+
+    articles.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("className", "Article")
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("Article")
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting Articles" + results.getError.getMessages)
+    }
+
+    assert(results.getResult.size == 1)
+    val props = results.getResult.get(0).getProperties
+    assert(props.get("title") == "Sam")
+    assert(props.get("content") == "Sam and Sam")
+    assert(props.get("wordCount") == 3)
+    assert(props.get("keywords") == Seq("yo", "hey"))
+    WeaviateDocker.deleteClass()
+  }
+
   test("Test empty strings and large batch") {
     WeaviateDocker.createClass()
     import spark.implicits._

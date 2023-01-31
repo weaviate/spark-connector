@@ -88,6 +88,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
         "Array of FloatType is not supported. Convert to Spark Array of DoubleType instead")
       case ArrayType(DoubleType, true) => record.getArray(index)
       case ArrayType(IntegerType, true) => record.getArray(index)
+      case ArrayType(StringType, true) => record.getArray(index)
       case ArrayType(LongType, true) => throw new SparkDataTypeNotSupported(
         "Array of LongType is not supported. Convert to Spark Array of IntegerType instead")
       case DateType =>

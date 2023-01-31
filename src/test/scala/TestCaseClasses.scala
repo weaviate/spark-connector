@@ -23,3 +23,5 @@ case class ArticleWithDouble(title: String, content: String, wordCount: Int, dou
 case class ArticleWithFloat(title: String, content: String, wordCount: Int, floatTestCase: Float)
 
 case class ArticleWithBoolean(title: String, content: String, wordCount: Int, boolTestCase: Boolean)
+
+case class ArticleWithStringArray(title: String, content: String, wordCount: Int, keywords: Seq[String])
