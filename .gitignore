@@ -8,3 +8,6 @@ target
 
 # ide artifacts
 .idea
+
+.venv
+__pycache__
