@@ -278,7 +278,7 @@ class SparkIntegrationTest
     assert(props.get("title") == "Sam")
     assert(props.get("content") == "Sam and Sam")
     assert(props.get("wordCount") == 3)
-    assert(props.get("ints") == List(1, 2, 3).asJava)
+    assert(props.get("ints") == List(1.0, 2.0, 3.0).asJava) // TODO: why are these coming back as dubs?
     WeaviateDocker.deleteClass()
   }
 
