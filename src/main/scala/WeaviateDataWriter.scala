@@ -42,7 +42,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       val errors = objectsWithError.map(obj => s"${obj.getId}: ${obj.getResult.getErrors.toString}")
       val successIDs = objectsWithSuccess.map(_.getId).toList
       logWarning(s"Successfully imported ${successIDs}. " +
-        s"Retrying objects with an error. Following objects in the batch upload had an error: ${errors}")
+        s"Retrying objects with an error. Following objects in the batch upload had an error: ${errors.mkString("Array(", ", ", ")")}")
       batch = batch -- successIDs
       writeBatch(retries - 1)
     } else {
@@ -86,8 +86,9 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       case DoubleType => Double.box(record.getDouble(index))
       case ArrayType(FloatType, true) => throw new SparkDataTypeNotSupported(
         "Array of FloatType is not supported. Convert to Spark Array of DoubleType instead")
-      case ArrayType(DoubleType, true) => record.getArray(index)
-      case ArrayType(IntegerType, true) => record.getArray(index)
+      case ArrayType(DoubleType, true) => record.getArray(index).toDoubleArray()
+      case ArrayType(IntegerType, true) => record.getArray(index).toIntArray()
+      case ArrayType(StringType, true) => record.getArray(index).toObjectArray(StringType).map(x => x.toString)
       case ArrayType(LongType, true) => throw new SparkDataTypeNotSupported(
         "Array of LongType is not supported. Convert to Spark Array of IntegerType instead")
       case DateType =>
