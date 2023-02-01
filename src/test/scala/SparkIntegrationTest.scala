@@ -57,6 +57,35 @@ class SparkIntegrationTest
     WeaviateDocker.deleteClass()
   }
 
+  test("Article with empty strings and int") {
+    WeaviateDocker.createClass()
+    import spark.implicits._
+    val articles = Seq(Article("", "Sam and Sam", 3)).toDF
+
+    articles.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("className", "Article")
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("Article")
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting Articles" + results.getError.getMessages)
+    }
+
+    val props = results.getResult.get(0).getProperties
+    assert(results.getResult.size == 1)
+    assert(props.get("title") == "")
+    assert(props.get("content") == "Sam and Sam")
+    assert(props.get("wordCount") == 3)
+    WeaviateDocker.deleteClass()
+  }
+
   test("Article with nulls") {
     WeaviateDocker.createClass()
     import spark.implicits._
