@@ -259,6 +259,40 @@ class SparkIntegrationTest
     WeaviateDocker.deleteClass()
   }
 
+  test("Article with empty string array") {
+    WeaviateDocker.createClass(Property.builder()
+      .dataType(List[String]("string[]").asJava)
+      .name("keywords")
+      .build()
+    )
+    import spark.implicits._
+    val articles = Seq(ArticleWithStringArray("Sam", "Sam and Sam", 3, Array())).toDF
+
+    articles.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("className", "Article")
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("Article")
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting Articles" + results.getError.getMessages)
+    }
+
+    assert(results.getResult.size == 1)
+    val props = results.getResult.get(0).getProperties
+    assert(props.get("title") == "Sam")
+    assert(props.get("content") == "Sam and Sam")
+    assert(props.get("wordCount") == 3)
+    assert(props.get("keywords") == List().asJava)
+    WeaviateDocker.deleteClass()
+  }
+
   test("Article with double array") {
     WeaviateDocker.createClass(Property.builder()
       .dataType(List[String]("number[]").asJava)
