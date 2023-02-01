@@ -23,3 +23,9 @@ case class ArticleWithDouble(title: String, content: String, wordCount: Int, dou
 case class ArticleWithFloat(title: String, content: String, wordCount: Int, floatTestCase: Float)
 
 case class ArticleWithBoolean(title: String, content: String, wordCount: Int, boolTestCase: Boolean)
+
+case class ArticleWithStringArray(title: String, content: String, wordCount: Int, keywords: Array[String])
+
+case class ArticleWithDoubleArray(title: String, content: String, wordCount: Int, doubles: Array[Double])
+
+case class ArticleWithIntArray(title: String, content: String, wordCount: Int, ints: Array[Int])

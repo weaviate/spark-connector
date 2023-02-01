@@ -180,6 +180,108 @@ class SparkIntegrationTest
     WeaviateDocker.deleteClass()
   }
 
+  test("Article with string array") {
+    WeaviateDocker.createClass(Property.builder()
+      .dataType(List[String]("string[]").asJava)
+      .name("keywords")
+      .build()
+    )
+    import spark.implicits._
+    val articles = Seq(ArticleWithStringArray("Sam", "Sam and Sam", 3, Array("yo", "hey"))).toDF
+
+    articles.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("className", "Article")
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("Article")
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting Articles" + results.getError.getMessages)
+    }
+
+    assert(results.getResult.size == 1)
+    val props = results.getResult.get(0).getProperties
+    assert(props.get("title") == "Sam")
+    assert(props.get("content") == "Sam and Sam")
+    assert(props.get("wordCount") == 3)
+    assert(props.get("keywords") == List("yo", "hey").asJava)
+    WeaviateDocker.deleteClass()
+  }
+
+  test("Article with double array") {
+    WeaviateDocker.createClass(Property.builder()
+      .dataType(List[String]("number[]").asJava)
+      .name("doubles")
+      .build()
+    )
+    import spark.implicits._
+    val articles = Seq(ArticleWithDoubleArray("Sam", "Sam and Sam", 3, Array(1.0, 2.0, 3.0))).toDF
+
+    articles.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("className", "Article")
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("Article")
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting Articles" + results.getError.getMessages)
+    }
+
+    assert(results.getResult.size == 1)
+    val props = results.getResult.get(0).getProperties
+    assert(props.get("title") == "Sam")
+    assert(props.get("content") == "Sam and Sam")
+    assert(props.get("wordCount") == 3)
+    assert(props.get("doubles") == List(1.0, 2.0, 3.0).asJava)
+    WeaviateDocker.deleteClass()
+  }
+
+  test("Article with int array") {
+    WeaviateDocker.createClass(Property.builder()
+      .dataType(List[String]("int[]").asJava)
+      .name("ints")
+      .build()
+    )
+    import spark.implicits._
+    val articles = Seq(ArticleWithIntArray("Sam", "Sam and Sam", 3, Array(1, 2, 3))).toDF
+
+    articles.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("className", "Article")
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("Article")
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting Articles" + results.getError.getMessages)
+    }
+
+    assert(results.getResult.size == 1)
+    val props = results.getResult.get(0).getProperties
+    assert(props.get("title") == "Sam")
+    assert(props.get("content") == "Sam and Sam")
+    assert(props.get("wordCount") == 3)
+    assert(props.get("ints") == List(1.0, 2.0, 3.0).asJava) // TODO: why are these coming back as dubs?
+    WeaviateDocker.deleteClass()
+  }
+
   test("Test empty strings and large batch") {
     WeaviateDocker.createClass()
     import spark.implicits._
