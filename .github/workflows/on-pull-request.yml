@@ -6,10 +6,10 @@ on:
   pull_request:
 
 jobs:
-  pr-pipeline:
+  scala-integration-tests:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Setup JDK
         uses: actions/setup-java@v3
         with:
@@ -17,3 +17,30 @@ jobs:
           java-version: 11
       - name: Build, Unit Test and Scala Spark Integration tests
         run: sbt -v +test
+
+  pyspark-integration-tests:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 11
+      - name: Get release version
+        run: |
+          version=$(cat version.sbt | cut -d '"' -f2)
+          echo "version=$version" >> $GITHUB_ENV
+      - name: Create jar with all dependencies included
+        run: |
+          sbt +assembly
+          test -f ./target/scala-2.12/spark-connector-assembly-${{ env.version }}.jar
+          test -f ./target/scala-2.13/spark-connector-assembly-${{ env.version }}.jar
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      - name: Install Python dependencies
+        run: pip install -r src/test/python/requirements.txt
+      - name: Run pyspark integration tests
+        run: pytest
