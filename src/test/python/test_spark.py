@@ -21,17 +21,20 @@ connector_version = os.environ.get("CONNECTOR_VERSION", get_connector_version())
 scala_version = os.environ.get("SCALA_VERSION", "2.12")
 weaviate_version = os.environ.get("WEAVIATE_VERSION", "1.17.2")
 spark_connector_jar_path = os.environ.get(
-    "CONNECTOR_JAR_PATH", f"target/scala-{scala_version}/spark-connector-assembly-{connector_version}.jar")
+    "CONNECTOR_JAR_PATH", f"target/scala-{scala_version}/spark-connector-assembly-{connector_version}.jar"
+)
 
 
 @pytest.fixture(scope="session")
 def spark():
-    return SparkSession.builder \
-        .appName("Weaviate Pyspark Tests") \
-        .master('local') \
-        .config("spark.jars", spark_connector_jar_path) \
-        .config("spark.driver.host", "127.0.0.1") \
+    return (
+        SparkSession.builder
+        .appName("Weaviate Pyspark Tests")
+        .master('local')
+        .config("spark.jars", spark_connector_jar_path)
+        .config("spark.driver.host", "127.0.0.1")
         .getOrCreate()
+    )
 
 
 @pytest.fixture
