@@ -2,7 +2,6 @@ package io.weaviate.spark
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.util.ArrayData
 import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
 import org.apache.spark.sql.types._
 import technology.semi.weaviate.client.v1.data.model.WeaviateObject
