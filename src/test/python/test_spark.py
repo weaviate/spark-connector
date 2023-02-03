@@ -2,10 +2,12 @@ import time
 import logging
 import os
 import re
+import uuid
 
 from pyspark.sql import SparkSession
 import pytest
 import docker
+import py4j
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType, DoubleType, BooleanType, IntegerType, \
     DateType
 import weaviate
@@ -141,3 +143,40 @@ def test_null_values(spark: SparkSession, weaviate_client: weaviate.Client):
     assert article["properties"]["integerArray"] == []
     assert article["properties"]["bool"] == False
     assert article["properties"]["date"] == "1970-01-01T00:00:00Z"
+
+
+def test_id_column(spark: SparkSession, weaviate_client: weaviate.Client):
+    article = {"class": "Article",
+               "properties": [
+                   {"name": "title", "dataType": ["string"]},
+               ]}
+    weaviate_client.schema.create_class(article)
+
+    spark_schema = StructType([
+        StructField('id', StringType(), True),
+        StructField('title', StringType(), True),
+    ])
+    article1_id = str(uuid.UUID(int=1))
+    articles = [(article1_id, "Sam and Sam")]
+    df = spark.createDataFrame(data=articles, schema=spark_schema)
+    df.write.format("io.weaviate.spark.Weaviate") \
+        .option("scheme", "http") \
+        .option("host", "localhost:8080") \
+        .option("className", "Article") \
+        .option("id", "id") \
+        .mode("append").save()
+
+    weaviate_articles = weaviate_client.data_object.get(class_name="Article").get("objects")
+    assert len(weaviate_articles) == 1
+    assert weaviate_articles[0]["id"] == article1_id
+
+    article2_id = uuid.UUID(int=2)
+    articles = [(article2_id, "Sam and Sam")]
+    with pytest.raises(py4j.protocol.Py4JJavaError):
+        df = spark.createDataFrame(data=articles, schema=spark_schema)
+        df.write.format("io.weaviate.spark.Weaviate") \
+            .option("scheme", "http") \
+            .option("host", "localhost:8080") \
+            .option("className", "Article") \
+            .option("id", "id") \
+            .mode("append").save()
