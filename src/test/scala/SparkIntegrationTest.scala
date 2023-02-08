@@ -91,15 +91,28 @@ class SparkIntegrationTest
     import spark.implicits._
     val articles = Seq(Article("Sam", null, 3)).toDF
 
-    assertThrows[org.apache.spark.SparkException] {
-      articles.write
-        .format("io.weaviate.spark.Weaviate")
-        .option("scheme", "http")
-        .option("host", "localhost:8080")
-        .option("className", "Article")
-        .mode("append")
-        .save()
+    articles.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("className", "Article")
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("Article")
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting Articles" + results.getError.getMessages)
     }
+
+    val props = results.getResult.get(0).getProperties
+    assert(results.getResult.size == 1)
+    assert(props.get("title") == "Sam")
+    assert(props.get("content") == "")
+    assert(props.get("wordCount") == 3)
+    WeaviateDocker.deleteClass()
   }
 
   test("Article with strings and int Streaming Write") {

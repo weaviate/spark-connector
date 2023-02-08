@@ -46,8 +46,8 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       batch = batch -- successIDs
       writeBatch(retries - 1)
     } else {
-       logInfo(s"Writing batch successful. IDs of inserted objects: ${IDs}")
-       batch.clear()
+      logInfo(s"Writing batch successful. IDs of inserted objects: ${IDs}")
+      batch.clear()
     }
   }
 
@@ -69,13 +69,13 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
 
   def getValueFromField(index: Int, record: InternalRow, dataType: DataType): AnyRef = {
     dataType match {
-      case StringType => record.getString(index)
-      case BooleanType => Boolean.box(record.getBoolean(index))
+      case StringType => if (record.isNullAt(index)) "" else record.getUTF8String(index).toString
+      case BooleanType => if (record.isNullAt(index)) Boolean.box(false) else Boolean.box(record.getBoolean(index))
       case ByteType => throw new SparkDataTypeNotSupported(
         "ByteType is not supported. Convert to Spark IntegerType instead")
       case ShortType => throw new SparkDataTypeNotSupported(
         "ShortType is not supported. Convert to Spark IntegerType instead")
-      case IntegerType => Int.box(record.getInt(index))
+      case IntegerType => if (record.isNullAt(index)) Int.box(0) else Int.box(record.getInt(index))
       case LongType => throw new SparkDataTypeNotSupported(
         "LongType is not supported. Convert to Spark IntegerType instead")
       // FloatType is a 4 byte data structure however in Weaviate float64 is using
@@ -83,12 +83,19 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       // inferSchema will always return DoubleType when it reads the Schema from Weaviate
       case FloatType => throw new SparkDataTypeNotSupported(
         "FloatType is not supported. Convert to Spark DoubleType instead")
-      case DoubleType => Double.box(record.getDouble(index))
+      case DoubleType => if (record.isNullAt(index)) Double.box(0.0) else Double.box(record.getDouble(index))
       case ArrayType(FloatType, true) => throw new SparkDataTypeNotSupported(
         "Array of FloatType is not supported. Convert to Spark Array of DoubleType instead")
-      case ArrayType(DoubleType, true) => record.getArray(index).toDoubleArray()
-      case ArrayType(IntegerType, true) => record.getArray(index).toIntArray()
-      case ArrayType(StringType, true) => record.getArray(index).toObjectArray(StringType).map(x => x.toString)
+      case ArrayType(DoubleType, true) =>
+        if (record.isNullAt(index)) Array[Double]() else record.getArray(index).toDoubleArray()
+      case ArrayType(IntegerType, true) =>
+        if (record.isNullAt(index)) Array[Int]() else record.getArray(index).toIntArray()
+      case ArrayType(StringType, true) =>
+        if (record.isNullAt(index)) {
+          Array[String]()
+        } else {
+          record.getArray(index).toObjectArray(StringType).map(x => x.toString)
+        }
       case ArrayType(LongType, true) => throw new SparkDataTypeNotSupported(
         "Array of LongType is not supported. Convert to Spark Array of IntegerType instead")
       case DateType =>
