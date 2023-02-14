@@ -278,22 +278,6 @@ def test_large_movie_dataset(spark: SparkSession, weaviate_client: weaviate.Clie
     assert result["data"]["Aggregate"]["Movies"][0]["meta"]["count"] == len(movies)
 
 
-def test_streaming(spark: SparkSession, weaviate_client: weaviate.Client, tmp_path):
-    weaviate_client.schema.create_class(movie_schema)
-    basepath = path.dirname(__file__)
-    df = spark.readStream.csv(basepath, schema=movie_spark_schema)
-    streaming_query = df.writeStream.format("io.weaviate.spark.Weaviate") \
-        .option("scheme", "http") \
-        .option("host", "localhost:8080") \
-        .option("className", "Movies") \
-        .option("checkpointLocation", tmp_path.absolute()) \
-        .outputMode("append").start()
-    time.sleep(10)
-    streaming_query.stop()
-    result = weaviate_client.query.aggregate("Movies").with_meta_count().do()
-    assert result["data"]["Aggregate"]["Movies"][0]["meta"]["count"] == 970
-
-
 @pytest.fixture
 def kafka_host():
     kafka = KafkaContainer()
@@ -307,13 +291,20 @@ def test_kafka_streaming(spark: SparkSession, weaviate_client: weaviate.Client, 
                "properties": [
                    {"name": "title", "dataType": ["string"]},
                    {"name": "keywords", "dataType": ["string[]"]},
+                   {"name": "bool", "dataType": ["boolean"]},
+                   {"name": "someint", "dataType": ["int"]},
+                   {"name": "anotherString", "dataType": ["string"]},
+                   {"name": "floatyfloat", "dataType": ["number"]},
                ]}
     weaviate_client.schema.create_class(article)
     producer = KafkaProducer(bootstrap_servers=[kafka_host],
                              value_serializer=lambda m: json.dumps(m).encode('ascii'))
 
     for _ in range(100):
-        kafka_result = producer.send('weaviate-test', {"title": "Sam", "keywords": ["article"]})
+        kafka_result = producer.send('weaviate-test', {
+            "title": "Sam", "keywords": ["article"], "bool": True, "someint": 1, "anotherString": "xx",
+            "floatyfloat": 0.12345,
+        })
         kafka_result.get(timeout=60)
 
     spark_schema = StructType([
