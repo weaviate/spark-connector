@@ -78,6 +78,10 @@ def weaviate_client():
         except Exception as e:
             logging.info(f"error connecting to weaviate with client. Retrying in 1 second. Exception: {e}")
             time.sleep(1)
+    try:
+        wclient.schema.delete_class("Article")
+    except:
+        logging.info("Article schema does not exist")
     yield wclient
     client.containers.get(container_name).remove(force=True)
 
