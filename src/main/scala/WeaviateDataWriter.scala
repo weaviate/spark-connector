@@ -94,7 +94,8 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
         if (record.isNullAt(index)) {
           Array[String]()
         } else {
-          record.getArray(index).toObjectArray(StringType).map(x => x.toString)
+          record.getArray(index).toObjectArray(StringType).map(
+            x => Option(x).filter(_ != null).map(_.toString).getOrElse(""))
         }
       case ArrayType(LongType, true) => throw new SparkDataTypeNotSupported(
         "Array of LongType is not supported. Convert to Spark Array of IntegerType instead")

@@ -124,7 +124,10 @@ def test_null_values(spark: SparkSession, weaviate_client: weaviate.Client):
         StructField('bool', BooleanType(), True),
         StructField('date', DateType(), True),
     ])
-    articles = [(None, None, None, None, None, None, None, None)]
+    articles = [
+        (None, None, None, None, None, None, None, None),
+        (None, [None], None, None, None, None, None, None),
+    ]
     df = spark.createDataFrame(data=articles, schema=spark_schema)
     df.write.format("io.weaviate.spark.Weaviate") \
         .option("scheme", "http") \
@@ -133,8 +136,8 @@ def test_null_values(spark: SparkSession, weaviate_client: weaviate.Client):
         .mode("append").save()
 
     weaviate_articles = weaviate_client.data_object.get(class_name="Article").get("objects")
-    assert len(weaviate_articles) == 1
-    article = weaviate_articles[0]
+    assert len(weaviate_articles) == 2
+    article = weaviate_articles[1]
     assert article["properties"]["title"] == ""
     assert article["properties"]["keywords"] == []
     assert article["properties"]["double"] == 0.0
