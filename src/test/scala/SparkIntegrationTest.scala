@@ -118,16 +118,17 @@ class SparkIntegrationTest
   test("Article with strings and int Streaming Write") {
     WeaviateDocker.createClass()
     import spark.implicits._
-    implicit val articleEncoder: Encoder[Article] = Encoders.product[Article]
-    val inputStream: MemoryStream[Article] = new MemoryStream[Article](1, spark.sqlContext, Some(1))
+    implicit val articleEncoder: Encoder[ArticleWithAll] = Encoders.product[ArticleWithAll]
+    val inputStream: MemoryStream[ArticleWithAll] = new MemoryStream[ArticleWithAll](1, spark.sqlContext, Some(1))
     val inputStreamDF = inputStream.toDF
 
-    val articles = Seq(Article("Sam", "Sam and Sam", 3))
+    val articles = List.fill(20)(ArticleWithAll("Sam", "Sam and Sam", 3, null, "not-used", true))
 
     val streamingWrite = inputStreamDF.writeStream
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
       .option("host", "localhost:8080")
+      .option("batchSize", 6)
       .option("className", "Article")
       .option("checkpointLocation", "/tmp/weaviate-spark-connector-test")
       .outputMode("append")
@@ -148,7 +149,7 @@ class SparkIntegrationTest
     assert(props.get("title") == "Sam")
     assert(props.get("content") == "Sam and Sam")
     assert(props.get("wordCount") == 3)
-    assert(results.getResult.size == 1)
+    assert(results.getResult.size == 20)
     WeaviateDocker.deleteClass()
     val dir = new Directory(new File("/tmp/weaviate-spark-connector-test"))
     dir.deleteRecursively()
