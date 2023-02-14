@@ -19,6 +19,7 @@ from testcontainers.kafka import KafkaContainer
 from kafka import KafkaProducer
 
 from .movie_schema import movie_schema
+from .event_schema import event_schema, spark_event_schema
 
 
 def get_connector_version():
@@ -300,9 +301,11 @@ def test_kafka_streaming(spark: SparkSession, weaviate_client: weaviate.Client, 
     producer = KafkaProducer(bootstrap_servers=[kafka_host],
                              value_serializer=lambda m: json.dumps(m).encode('ascii'))
 
-    for _ in range(100):
+    for i in range(100):
         kafka_result = producer.send('weaviate-test', {
-            "title": "Sam", "keywords": ["article"], "bool": True, "someint": 1, "anotherString": "xx",
+            "title": f"{i}",
+            "keywords": ["article"] if i == 1 else None,
+            "bool": True, "someint": 1, "anotherString": None,
             "floatyfloat": 0.12345,
         })
         kafka_result.get(timeout=60)
@@ -339,3 +342,41 @@ def test_kafka_streaming(spark: SparkSession, weaviate_client: weaviate.Client, 
     write_stream.processAllAvailable()
     result = weaviate_client.query.aggregate("Article").with_meta_count().do()
     assert result["data"]["Aggregate"]["Article"][0]["meta"]["count"] == 100
+
+
+def test_kafka_streaming_event_data(spark: SparkSession, weaviate_client: weaviate.Client, tmp_path, kafka_host):
+    weaviate_client.schema.create_class(event_schema)
+    producer = KafkaProducer(bootstrap_servers=[kafka_host],
+                             value_serializer=lambda m: json.dumps(m).encode('ascii'))
+
+    basepath = path.dirname(__file__)
+    events_path = path.abspath(path.join(basepath, "events.json"))
+    with open(events_path) as f:
+        events = json.loads(f.read())
+    for event in events:
+        kafka_result = producer.send('weaviate-test', event)
+        kafka_result.get(timeout=60)
+
+    df = spark.readStream \
+        .format("kafka") \
+        .option("kafka.bootstrap.servers", kafka_host) \
+        .option("subscribe", "weaviate-test") \
+        .option("startingOffsets", "earliest") \
+        .option("id", "id_column") \
+        .load() \
+        .select(from_json(col("value").cast("string"), spark_event_schema).alias("parsed_value")) \
+        .select(col("parsed_value.*"))
+
+    write_stream = (
+        df.writeStream
+        .format("io.weaviate.spark.Weaviate")
+        .option("scheme", "http")
+        .option("host", "localhost:8080")
+        .option("className", "Event")
+        .option("checkpointLocation", tmp_path.absolute())
+        .outputMode("append")
+        .start()
+    )
+    write_stream.processAllAvailable()
+    result = weaviate_client.query.aggregate("Event").with_meta_count().do()
+    assert result["data"]["Aggregate"]["Event"][0]["meta"]["count"] == len(events)
