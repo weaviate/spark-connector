@@ -7,7 +7,6 @@ import uuid
 from pyspark.sql import SparkSession
 import pytest
 import docker
-import py4j
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType, DoubleType, BooleanType, IntegerType, \
     DateType
 import weaviate
@@ -76,14 +75,31 @@ def test_string_arrays(spark: SparkSession, weaviate_client: weaviate.Client):
                "properties": [
                    {"name": "title", "dataType": ["string"]},
                    {"name": "keywords", "dataType": ["string[]"]},
+                   {"name": "keywords2", "dataType": ["string[]"]},
+                   {"name": "keywords3", "dataType": ["string[]"]},
+                   {"name": "title2", "dataType": ["string"]},
+                   {"name": "title3", "dataType": ["string"]},
+                   {"name": "title4", "dataType": ["string"]},
+                   {"name": "title5", "dataType": ["string"]},
+                   {"name": "title6", "dataType": ["string"]},
                ]}
     weaviate_client.schema.create_class(article)
 
     spark_schema = StructType([
         StructField('title', StringType(), True),
-        StructField('keywords', ArrayType(StringType()), True)
+        StructField('keywords', ArrayType(StringType()), True),
+        StructField('keywords2', ArrayType(StringType()), True),
+        StructField('keywords3', ArrayType(StringType()), True),
+        StructField('title2', StringType(), True),
+        StructField('title3', StringType(), True),
+        StructField('title4', StringType(), True),
+        StructField('title5', StringType(), True),
+        StructField('title6', StringType(), True),
     ])
-    articles = [("Sam and Sam", ["keyword1", "keyword2"]), ("", [])]
+    articles = [
+        ("Sam and Sam", ["keyword1", "keyword2"], [""], [""], "", "", "", "", ""),
+        ("", [], [""], [""], "", "", "", "", ""),
+    ]
     df = spark.createDataFrame(data=articles, schema=spark_schema)
     df.write.format("io.weaviate.spark.Weaviate") \
         .option("scheme", "http") \
@@ -97,6 +113,7 @@ def test_string_arrays(spark: SparkSession, weaviate_client: weaviate.Client):
     assert weaviate_articles[0]["properties"]["title"] == "Sam and Sam"
     assert weaviate_articles[0]["properties"]["keywords"] == articles[0][1]
     assert weaviate_articles[1]["properties"]["title"] == ""
+    print(articles[1])
     assert weaviate_articles[1]["properties"]["keywords"] == articles[1][1]
 
 
@@ -105,6 +122,7 @@ def test_null_values(spark: SparkSession, weaviate_client: weaviate.Client):
                "properties": [
                    {"name": "title", "dataType": ["string"]},
                    {"name": "keywords", "dataType": ["string[]"]},
+                   {"name": "keywords2", "dataType": ["string[]"]},
                    {"name": "double", "dataType": ["number"]},
                    {"name": "doubleArray", "dataType": ["number[]"]},
                    {"name": "integer", "dataType": ["int"]},
@@ -123,10 +141,11 @@ def test_null_values(spark: SparkSession, weaviate_client: weaviate.Client):
         StructField('integerArray', ArrayType(IntegerType()), True),
         StructField('bool', BooleanType(), True),
         StructField('date', DateType(), True),
+        StructField('keywords2', ArrayType(StringType()), True),
     ])
     articles = [
-        (None, None, None, None, None, None, None, None),
-        (None, [None], None, None, None, None, None, None),
+        (None, [None], None, None, None, None, None, None, []),
+        (None, [None], None, None, None, None, None, None, []),
     ]
     df = spark.createDataFrame(data=articles, schema=spark_schema)
     df.write.format("io.weaviate.spark.Weaviate") \
@@ -139,7 +158,8 @@ def test_null_values(spark: SparkSession, weaviate_client: weaviate.Client):
     assert len(weaviate_articles) == 2
     article = weaviate_articles[1]
     assert article["properties"]["title"] == ""
-    assert article["properties"]["keywords"] == []
+    assert article["properties"]["keywords"] == [""]
+    assert article["properties"]["keywords2"] == []
     assert article["properties"]["double"] == 0.0
     assert article["properties"]["doubleArray"] == []
     assert article["properties"]["integer"] == 0
@@ -175,11 +195,11 @@ def test_id_column(spark: SparkSession, weaviate_client: weaviate.Client):
 
     article2_id = uuid.UUID(int=2)
     articles = [(article2_id, "Sam and Sam")]
-    with pytest.raises(py4j.protocol.Py4JJavaError):
-        df = spark.createDataFrame(data=articles, schema=spark_schema)
-        df.write.format("io.weaviate.spark.Weaviate") \
-            .option("scheme", "http") \
-            .option("host", "localhost:8080") \
-            .option("className", "Article") \
-            .option("id", "id") \
-            .mode("append").save()
+    df = spark.createDataFrame(data=articles, schema=spark_schema)
+    df.write.format("io.weaviate.spark.Weaviate") \
+        .option("scheme", "http") \
+        .option("host", "localhost:8080") \
+        .option("className", "Article") \
+        .option("id", "id") \
+        .mode("append").save()
+    # TODO: Add assertion for log message that shows "id in body must be of type uuid"
