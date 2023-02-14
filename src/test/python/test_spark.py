@@ -1,6 +1,7 @@
 import time
 import logging
 import os
+from os import path
 import re
 import uuid
 
@@ -10,6 +11,9 @@ import docker
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType, DoubleType, BooleanType, IntegerType, \
     DateType
 import weaviate
+import pandas as pd
+
+from .movie_schema import movie_schema
 
 
 def get_connector_version():
@@ -203,3 +207,62 @@ def test_id_column(spark: SparkSession, weaviate_client: weaviate.Client):
         .option("id", "id") \
         .mode("append").save()
     # TODO: Add assertion for log message that shows "id in body must be of type uuid"
+
+
+def test_large_movie_dataset(spark: SparkSession, weaviate_client: weaviate.Client):
+    weaviate_client.schema.create_class(movie_schema)
+    spark_schema = StructType([
+        StructField('movie_id', DoubleType(), True),
+        StructField('best_rating', DoubleType(), True),
+        StructField('worst_rating', DoubleType(), True),
+        StructField('url', StringType(), True),
+        StructField('title', StringType(), True),
+        StructField('poster_link', StringType(), True),
+        StructField('genres', StringType(), True),
+        StructField('actors', StringType(), True),
+        StructField('director', StringType(), True),
+        StructField('description', StringType(), True),
+        StructField('date_published', StringType(), True),
+        StructField('keywords', StringType(), True),
+        StructField('rating_value', DoubleType(), True),
+        StructField('review_aurthor', StringType(), True),
+        StructField('review_date', StringType(), True),
+        StructField('review_body', StringType(), True),
+        StructField('duration', StringType(), True),
+    ])
+    basepath = path.dirname(__file__)
+    movies_csv_path = path.abspath(path.join(basepath, "movies.csv"))
+    data = pd.read_csv(movies_csv_path, engine="python", on_bad_lines='skip')
+    movies = []
+    for i in range(0, len(data)):
+        item = data.iloc[i]
+        movies.append({
+            'movie_id': float(item['id']),
+            'url': str(item['url']),
+            'title': str(item['Name']).lower(),
+            'poster_link': str(item['PosterLink']),
+            'genres': str(item['Genres']),
+            'actors': str(item['Actors']).lower(),
+            'director': str(item['Director']).lower(),
+            'description': str(item['Description']),
+            'date_published': str(item['DatePublished']),
+            'keywords': str(item['Keywords']),
+            'worst_rating': float(item['WorstRating']),
+            'best_rating': float(item['BestRating']),
+            'rating_value': float(item['RatingValue']),
+            'review_aurthor': str(item['ReviewAurthor']),
+            'review_body': str(item['ReviewBody']),
+            'review_date': str(item['ReviewDate']),
+            'duration': str(item['duration'])
+        })
+
+    df = spark.createDataFrame(data=movies, schema=spark_schema)
+    df.write.format("io.weaviate.spark.Weaviate") \
+        .option("scheme", "http") \
+        .option("host", "localhost:8080") \
+        .option("className", "Movies") \
+        .mode("append").save()
+
+    result = weaviate_client.query.aggregate("Movies").with_meta_count().do()
+    print(result)
+    assert result["data"]["Aggregate"]["Movies"][0]["meta"]["count"] == len(movies)
