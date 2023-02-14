@@ -310,6 +310,10 @@ def test_kafka_streaming(spark: SparkSession, weaviate_client: weaviate.Client, 
     spark_schema = StructType([
         StructField('title', StringType(), True),
         StructField('keywords', ArrayType(StringType()), True),
+        StructField('bool', BooleanType(), True),
+        StructField('someint', IntegerType(), True),
+        StructField('anotherString', StringType(), True),
+        StructField('floatyfloat', DoubleType(), True),
     ])
     df = spark \
         .readStream \
@@ -317,6 +321,7 @@ def test_kafka_streaming(spark: SparkSession, weaviate_client: weaviate.Client, 
         .option("kafka.bootstrap.servers", kafka_host) \
         .option("subscribe", "weaviate-test") \
         .option("startingOffsets", "earliest") \
+        .option("batchSize", 105) \
         .load() \
         .select(from_json(col("value").cast("string"), spark_schema).alias("parsed_value")) \
         .select(col("parsed_value.*"))
