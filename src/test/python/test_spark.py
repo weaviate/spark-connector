@@ -67,7 +67,7 @@ def weaviate_client():
                      "PERSISTENCE_DATA_PATH": "./data"},
     )
     time.sleep(0.5)
-    wclient = weaviate.Client('http://localhost:8080')
+    wclient = weaviate.Client('http://20.232.49.89:80')
     test_class_name = "TestWillBeRemoved"
     retries = 3
     while retries > 0:
