@@ -115,7 +115,7 @@ def test_string_arrays(spark: SparkSession, weaviate_client: weaviate.Client):
     df = spark.createDataFrame(data=articles, schema=spark_schema)
     df.write.format("io.weaviate.spark.Weaviate") \
         .option("scheme", "http") \
-        .option("host", "localhost:8080") \
+        .option("host", "20.232.49.89:80") \
         .option("className", "Article") \
         .mode("append").save()
 
@@ -162,7 +162,7 @@ def test_null_values(spark: SparkSession, weaviate_client: weaviate.Client):
     df = spark.createDataFrame(data=articles, schema=spark_schema)
     df.write.format("io.weaviate.spark.Weaviate") \
         .option("scheme", "http") \
-        .option("host", "localhost:8080") \
+        .option("host", "20.232.49.89:80") \
         .option("className", "Article") \
         .mode("append").save()
 
@@ -196,7 +196,7 @@ def test_id_column(spark: SparkSession, weaviate_client: weaviate.Client):
     df = spark.createDataFrame(data=articles, schema=spark_schema)
     df.write.format("io.weaviate.spark.Weaviate") \
         .option("scheme", "http") \
-        .option("host", "localhost:8080") \
+        .option("host", "20.232.49.89:80") \
         .option("className", "Article") \
         .option("id", "id") \
         .mode("append").save()
@@ -211,7 +211,7 @@ def test_id_column(spark: SparkSession, weaviate_client: weaviate.Client):
         df = spark.createDataFrame(data=articles, schema=spark_schema)
         df.write.format("io.weaviate.spark.Weaviate") \
             .option("scheme", "http") \
-            .option("host", "localhost:8080") \
+            .option("host", "20.232.49.89:80") \
             .option("className", "Article") \
             .option("id", "id") \
             .mode("append").save()
@@ -269,7 +269,7 @@ def test_large_movie_dataset(spark: SparkSession, weaviate_client: weaviate.Clie
     df = spark.createDataFrame(data=movies, schema=movie_spark_schema)
     df.write.format("io.weaviate.spark.Weaviate") \
         .option("scheme", "http") \
-        .option("host", "localhost:8080") \
+        .option("host", "20.232.49.89:80") \
         .option("className", "Movies") \
         .mode("append").save()
 
@@ -330,7 +330,7 @@ def test_kafka_streaming(spark: SparkSession, weaviate_client: weaviate.Client, 
         df.writeStream
         .format("io.weaviate.spark.Weaviate")
         .option("scheme", "http")
-        .option("host", "localhost:8080")
+        .option("host", "20.232.49.89:80")
         .option("className", "Article")
         .option("checkpointLocation", tmp_path.absolute())
         .outputMode("append")
