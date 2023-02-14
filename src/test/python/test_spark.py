@@ -46,6 +46,7 @@ def spark():
         .config("spark.jars", spark_connector_jar_path)
         .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.1")
         .config("spark.driver.host", "127.0.0.1")
+        .config("spark.driver.memory", "1g")
         .getOrCreate()
     )
     # spark.sparkContext.setLogLevel("INFO")
