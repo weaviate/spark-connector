@@ -1,0 +1,740 @@
+[
+  {
+    "moneyline": "Line: PHX -2.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "78879494-926f-edcf-7de7-a783407d0266"
+  },
+  {
+    "moneyline": "Line: CREI -1.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "e89063c4-64f6-7188-a01a-ee5f7296df35"
+  },
+  {
+    "moneyline": "Line: EVEN",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "d2f42f0f-3eee-04ca-4210-96a6e9e0f681"
+  },
+  {
+    "moneyline": "Line: USU -13.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "0e8ab32d-f4a3-e485-081b-e941007627e5"
+  },
+  {
+    "moneyline": "Line: UGA -4.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "fcc4062d-a270-1d2f-a6bf-3657164f6c76"
+  },
+  {
+    "moneyline": "Line: NJ -210",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "1cc3087e-8f53-89a9-f669-7d6f08e02294"
+  },
+  {
+    "moneyline": "Line: VILL -10.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "b480b815-86ba-8937-d77c-a64f7e872b83"
+  },
+  {
+    "moneyline": "Line: TOL -16.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "9101750d-5a74-fbb1-4a65-0deacc2a45de"
+  },
+  {
+    "moneyline": "Line: WPG -135",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "4fb6090d-9fbe-d65d-33f7-e6ece60ed697"
+  },
+  {
+    "moneyline": "Line: BOS -120",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "af757fdb-9950-e725-8b69-8bd6443de730"
+  },
+  {
+    "moneyline": "Line: TB -125",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "fb274777-bacc-da1a-6bb9-51a0e70adcf7"
+  },
+  {
+    "moneyline": "Line: TOR -7.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "b6220938-472e-92fc-ba56-8b882fcc73a6"
+  },
+  {
+    "moneyline": "Line: TOR -7.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "b6220938-472e-92fc-ba56-8b882fcc73a6"
+  },
+  {
+    "moneyline": "Line: PIT -160",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "13b86822-99ea-7c9e-f710-88c5451aed84"
+  },
+  {
+    "moneyline": "Line: UNLV -6.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "93737535-f739-d3a8-e323-cdb1e448c9c4"
+  },
+  {
+    "moneyline": "Line: ILL -3.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "14385387-b5cd-7c30-d991-5d98905c2710"
+  },
+  {
+    "moneyline": "Line: NYI -205",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "aa27b2d2-cf67-765b-d7db-043dab65678b"
+  },
+  {
+    "moneyline": "Line: LAC -8.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "4a5acc06-ab68-a76b-7f5c-23e08ef5289f"
+  },
+  {
+    "moneyline": "Line: FLA -135",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "1187ea65-bac6-bcea-d02f-b022ba05e0e3"
+  },
+  {
+    "moneyline": "Line: FLA -135",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "1187ea65-bac6-bcea-d02f-b022ba05e0e3"
+  },
+  {
+    "moneyline": "Line: MTL -140",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "52bb83fe-30aa-0c49-12a9-17a6712e3b1c"
+  },
+  {
+    "moneyline": "Line: RUTG -14.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "ebfeab35-b13c-0796-1fb8-c551d9b4c1c2"
+  },
+  {
+    "moneyline": "Line: MTL -140",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "52bb83fe-30aa-0c49-12a9-17a6712e3b1c"
+  },
+  {
+    "moneyline": "Line: KENT -11.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "6fbc2705-d9aa-16cf-8e73-e0e3165593a5"
+  },
+  {
+    "moneyline": "Line: SJU -1.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "0a554c1c-6efa-1f7e-76e0-23d5547bc929"
+  },
+  {
+    "moneyline": "Line: DUKE -12.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "03b210ee-823e-f5de-0417-e9973f73cf14"
+  },
+  {
+    "moneyline": "Line: SJU -1.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "0a554c1c-6efa-1f7e-76e0-23d5547bc929"
+  },
+  {
+    "moneyline": "Line: KENT -11.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "6fbc2705-d9aa-16cf-8e73-e0e3165593a5"
+  },
+  {
+    "moneyline": "Line: BGSU -7.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "c019ee26-97a3-b1b7-4072-9583b36f9f11"
+  },
+  {
+    "moneyline": "Line: KU -1.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "1a51a313-a0d9-fda1-8fd9-323e07c3f311"
+  },
+  {
+    "moneyline": "Line: VAN -5.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "dc48311e-5866-41e9-73a7-65e15445a2db"
+  },
+  {
+    "moneyline": "Line: HALL -11.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "0776d2d2-47ef-d353-3585-2bbc62d4a5be"
+  },
+  {
+    "moneyline": "Line: BALL -11.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "60bc6289-738f-e7c6-584d-b616b4b39bb7"
+  },
+  {
+    "moneyline": "Line: WISC -1.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "58fd4617-9fb0-33e6-694d-3df87a285060"
+  },
+  {
+    "moneyline": "Line: BALL -11.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "60bc6289-738f-e7c6-584d-b616b4b39bb7"
+  },
+  {
+    "moneyline": "Line: PITT -9.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "f6045ef3-ae65-85b0-6a39-109c68c44d1b"
+  },
+  {
+    "moneyline": "Line: CAR -165",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "a5b34b57-d187-4226-672c-a7b85a6aa579"
+  },
+  {
+    "moneyline": "Line: OHIO -4.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "a50a2229-2941-2ec7-c067-a51f53733237"
+  },
+  {
+    "moneyline": "Line: SIU -4.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "18628b6e-217b-896b-7909-f5f84a981731"
+  },
+  {
+    "moneyline": "Line: AKR -9.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "5f782c7d-b3d8-1a7a-1625-a7140a1ac333"
+  },
+  {
+    "moneyline": "Line: MASS -4.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "e0fff60e-1b9a-3847-3aa6-105a18be6f28"
+  },
+  {
+    "moneyline": "Line: AUB -7.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "1f31d977-439d-442e-1eb2-847846c6c7a9"
+  },
+  {
+    "moneyline": "Line: UNM -10.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "ef1eb55e-2bde-0980-6ecd-7db68a322322"
+  },
+  {
+    "moneyline": "Line: SYR -1.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "f245ed11-d975-9c5e-e3e4-848d19b02697"
+  },
+  {
+    "moneyline": "Line: UNM -10.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "ef1eb55e-2bde-0980-6ecd-7db68a322322"
+  },
+  {
+    "moneyline": "Line: MIL -9.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "b6642fe6-686d-3907-577c-a747bd02ae9f"
+  },
+  {
+    "moneyline": "Line: PHX -2.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "78879494-926f-edcf-7de7-a783407d0266"
+  },
+  {
+    "moneyline": "Line: MIL -9.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "b6642fe6-686d-3907-577c-a747bd02ae9f"
+  },
+  {
+    "moneyline": "Line: POR -2.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "b7950058-0b34-4047-109e-037ec5be7027"
+  },
+  {
+    "moneyline": "Line: CREI -1.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "e89063c4-64f6-7188-a01a-ee5f7296df35"
+  },
+  {
+    "moneyline": "Line: EVEN",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "d2f42f0f-3eee-04ca-4210-96a6e9e0f681"
+  },
+  {
+    "moneyline": "Line: USU -13.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "0e8ab32d-f4a3-e485-081b-e941007627e5"
+  },
+  {
+    "moneyline": "Line: UGA -4.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "fcc4062d-a270-1d2f-a6bf-3657164f6c76"
+  },
+  {
+    "moneyline": "Line: VILL -10.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "b480b815-86ba-8937-d77c-a64f7e872b83"
+  },
+  {
+    "moneyline": "Line: WPG -135",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "4fb6090d-9fbe-d65d-33f7-e6ece60ed697"
+  },
+  {
+    "moneyline": "Line: BOS -120",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "af757fdb-9950-e725-8b69-8bd6443de730"
+  },
+  {
+    "moneyline": "Line: UNLV -6.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "93737535-f739-d3a8-e323-cdb1e448c9c4"
+  },
+  {
+    "moneyline": "Line: ILL -3.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "14385387-b5cd-7c30-d991-5d98905c2710"
+  },
+  {
+    "moneyline": "Line: NYI -205",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "aa27b2d2-cf67-765b-d7db-043dab65678b"
+  },
+  {
+    "moneyline": "Line: LAC -8.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "4a5acc06-ab68-a76b-7f5c-23e08ef5289f"
+  },
+  {
+    "moneyline": "Line: RUTG -14.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "ebfeab35-b13c-0796-1fb8-c551d9b4c1c2"
+  },
+  {
+    "moneyline": "Line: DUKE -12.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "03b210ee-823e-f5de-0417-e9973f73cf14"
+  },
+  {
+    "moneyline": "Line: BGSU -7.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "c019ee26-97a3-b1b7-4072-9583b36f9f11"
+  },
+  {
+    "moneyline": "Line: KU -1.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "1a51a313-a0d9-fda1-8fd9-323e07c3f311"
+  },
+  {
+    "moneyline": "Line: HALL -11.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "0776d2d2-47ef-d353-3585-2bbc62d4a5be"
+  },
+  {
+    "moneyline": "Line: WISC -1.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "58fd4617-9fb0-33e6-694d-3df87a285060"
+  },
+  {
+    "moneyline": "Line: PITT -9.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "f6045ef3-ae65-85b0-6a39-109c68c44d1b"
+  },
+  {
+    "moneyline": "Line: OHIO -4.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "a50a2229-2941-2ec7-c067-a51f53733237"
+  },
+  {
+    "moneyline": "Line: SYR -1.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "f245ed11-d975-9c5e-e3e4-848d19b02697"
+  },
+  {
+    "moneyline": "Line: NJ -210",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "1cc3087e-8f53-89a9-f669-7d6f08e02294"
+  },
+  {
+    "moneyline": "Line: TOL -16.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "9101749d-5a74-fbb1-4a65-0deacc2a45de"
+  },
+  {
+    "moneyline": "Line: VAN -5.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "dc48311e-5866-41e9-73a7-65e15445a2db"
+  },
+  {
+    "moneyline": "Line: BALL -11.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "60bc6289-738f-e7c6-584d-b616b4b39bb7"
+  },
+  {
+    "moneyline": "Line: SIU -4.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "18628b6e-217b-896b-7909-f5f84a981731"
+  },
+  {
+    "moneyline": "Line: AKR -9.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "5f782c7d-b3d8-1a7a-1625-a7140a1ac333"
+  },
+  {
+    "moneyline": "Line: MASS -4.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "e0fff60e-1b9a-3847-3aa6-105a18be6f28"
+  },
+  {
+    "moneyline": "Line: AUB -7.0",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "1f31d977-439d-442e-1eb2-847846c6c7a9"
+  },
+  {
+    "moneyline": "Line: PHX -2.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "78879494-926f-edcf-7de7-a783407d0266"
+  },
+  {
+    "moneyline": "Line: PIT -160",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "13b86822-99ea-7c9e-f710-88c5451aed84"
+  },
+  {
+    "moneyline": "Line: FLA -135",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "1187ea65-bac6-bcea-d02f-b022ba05e0e3"
+  },
+  {
+    "moneyline": "Line: SJU -1.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "0a554c1c-6efa-1f7e-76e0-23d5547bc929"
+  },
+  {
+    "moneyline": "Line: POR -2.5",
+    "scores": null,
+    "teams": null,
+    "plays": [],
+    "is_live": false,
+    "current_period": null,
+    "id_column": "b7950058-0b34-4047-109e-037ec5be7027"
+  }
+]
