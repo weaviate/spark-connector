@@ -2,11 +2,12 @@ import time
 import logging
 import os
 from os import path
-import tempfile
+import json
 import re
 import uuid
 
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import from_json, col
 import pytest
 import docker
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType, DoubleType, BooleanType, IntegerType, \
@@ -14,6 +15,8 @@ from pyspark.sql.types import StructType, StructField, StringType, ArrayType, Do
 import weaviate
 import pandas as pd
 import py4j
+from testcontainers.kafka import KafkaContainer
+from kafka import KafkaProducer
 
 from .movie_schema import movie_schema
 
@@ -35,14 +38,17 @@ spark_connector_jar_path = os.environ.get(
 
 @pytest.fixture(scope="session")
 def spark():
-    return (
+    spark = (
         SparkSession.builder
         .appName("Weaviate Pyspark Tests")
         .master('local')
         .config("spark.jars", spark_connector_jar_path)
+        .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.1")
         .config("spark.driver.host", "127.0.0.1")
         .getOrCreate()
     )
+    # spark.sparkContext.setLogLevel("INFO")
+    return spark
 
 
 @pytest.fixture
@@ -276,12 +282,64 @@ def test_streaming(spark: SparkSession, weaviate_client: weaviate.Client, tmp_pa
     weaviate_client.schema.create_class(movie_schema)
     basepath = path.dirname(__file__)
     df = spark.readStream.csv(basepath, schema=movie_spark_schema)
-    df.writeStream.format("io.weaviate.spark.Weaviate") \
+    streaming_query = df.writeStream.format("io.weaviate.spark.Weaviate") \
         .option("scheme", "http") \
         .option("host", "localhost:8080") \
         .option("className", "Movies") \
         .option("checkpointLocation", tmp_path.absolute()) \
-        .outputMode("append").start().processAllAvailable()
+        .outputMode("append").start()
+    time.sleep(10)
+    streaming_query.stop()
     result = weaviate_client.query.aggregate("Movies").with_meta_count().do()
-    # The streaming test occasionally returns 956
-    assert result["data"]["Aggregate"]["Movies"][0]["meta"]["count"] in [955, 956]
+    assert result["data"]["Aggregate"]["Movies"][0]["meta"]["count"] == 970
+
+
+@pytest.fixture
+def kafka_host():
+    kafka = KafkaContainer()
+    kafka.start()
+    yield kafka.get_bootstrap_server()
+    kafka.stop(force=True)
+
+
+def test_kafka_streaming(spark: SparkSession, weaviate_client: weaviate.Client, tmp_path, kafka_host):
+    article = {"class": "Article",
+               "properties": [
+                   {"name": "title", "dataType": ["string"]},
+                   {"name": "keywords", "dataType": ["string[]"]},
+               ]}
+    weaviate_client.schema.create_class(article)
+    producer = KafkaProducer(bootstrap_servers=[kafka_host],
+                             value_serializer=lambda m: json.dumps(m).encode('ascii'))
+
+    for _ in range(100):
+        kafka_result = producer.send('weaviate-test', {"title": "Sam", "keywords": ["article"]})
+        kafka_result.get(timeout=60)
+
+    spark_schema = StructType([
+        StructField('title', StringType(), True),
+        StructField('keywords', ArrayType(StringType()), True),
+    ])
+    df = spark \
+        .readStream \
+        .format("kafka") \
+        .option("kafka.bootstrap.servers", kafka_host) \
+        .option("subscribe", "weaviate-test") \
+        .option("startingOffsets", "earliest") \
+        .load() \
+        .select(from_json(col("value").cast("string"), spark_schema).alias("parsed_value")) \
+        .select(col("parsed_value.*"))
+
+    write_stream = (
+        df.writeStream
+        .format("io.weaviate.spark.Weaviate")
+        .option("scheme", "http")
+        .option("host", "localhost:8080")
+        .option("className", "Article")
+        .option("checkpointLocation", tmp_path.absolute())
+        .outputMode("append")
+        .start()
+    )
+    write_stream.processAllAvailable()
+    result = weaviate_client.query.aggregate("Article").with_meta_count().do()
+    assert result["data"]["Aggregate"]["Article"][0]["meta"]["count"] == 100

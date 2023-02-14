@@ -3,3 +3,5 @@ pytest
 docker
 weaviate-client
 pandas
+testcontainers
+kafka-python
