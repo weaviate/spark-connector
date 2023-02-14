@@ -29,3 +29,6 @@ case class ArticleWithStringArray(title: String, content: String, wordCount: Int
 case class ArticleWithDoubleArray(title: String, content: String, wordCount: Int, doubles: Array[Double])
 
 case class ArticleWithIntArray(title: String, content: String, wordCount: Int, ints: Array[Int])
+
+case class ArticleWithAll(title: String, content: String, wordCount: Int, keywords: Array[String],
+                          customId: String, myBool: Boolean)
