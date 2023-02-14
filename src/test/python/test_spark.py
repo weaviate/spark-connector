@@ -2,6 +2,7 @@ import time
 import logging
 import os
 from os import path
+import tempfile
 import re
 import uuid
 
@@ -210,27 +211,29 @@ def test_id_column(spark: SparkSession, weaviate_client: weaviate.Client):
             .mode("append").save()
 
 
+movie_spark_schema = StructType([
+    StructField('movie_id', DoubleType(), True),
+    StructField('best_rating', DoubleType(), True),
+    StructField('worst_rating', DoubleType(), True),
+    StructField('url', StringType(), True),
+    StructField('title', StringType(), True),
+    StructField('poster_link', StringType(), True),
+    StructField('genres', StringType(), True),
+    StructField('actors', StringType(), True),
+    StructField('director', StringType(), True),
+    StructField('description', StringType(), True),
+    StructField('date_published', StringType(), True),
+    StructField('keywords', StringType(), True),
+    StructField('rating_value', DoubleType(), True),
+    StructField('review_aurthor', StringType(), True),
+    StructField('review_date', StringType(), True),
+    StructField('review_body', StringType(), True),
+    StructField('duration', StringType(), True),
+])
+
+
 def test_large_movie_dataset(spark: SparkSession, weaviate_client: weaviate.Client):
     weaviate_client.schema.create_class(movie_schema)
-    spark_schema = StructType([
-        StructField('movie_id', DoubleType(), True),
-        StructField('best_rating', DoubleType(), True),
-        StructField('worst_rating', DoubleType(), True),
-        StructField('url', StringType(), True),
-        StructField('title', StringType(), True),
-        StructField('poster_link', StringType(), True),
-        StructField('genres', StringType(), True),
-        StructField('actors', StringType(), True),
-        StructField('director', StringType(), True),
-        StructField('description', StringType(), True),
-        StructField('date_published', StringType(), True),
-        StructField('keywords', StringType(), True),
-        StructField('rating_value', DoubleType(), True),
-        StructField('review_aurthor', StringType(), True),
-        StructField('review_date', StringType(), True),
-        StructField('review_body', StringType(), True),
-        StructField('duration', StringType(), True),
-    ])
     basepath = path.dirname(__file__)
     movies_csv_path = path.abspath(path.join(basepath, "movies.csv"))
     data = pd.read_csv(movies_csv_path, engine="python", on_bad_lines='skip')
@@ -257,7 +260,7 @@ def test_large_movie_dataset(spark: SparkSession, weaviate_client: weaviate.Clie
             'duration': str(item['duration'])
         })
 
-    df = spark.createDataFrame(data=movies, schema=spark_schema)
+    df = spark.createDataFrame(data=movies, schema=movie_spark_schema)
     df.write.format("io.weaviate.spark.Weaviate") \
         .option("scheme", "http") \
         .option("host", "localhost:8080") \
@@ -267,3 +270,18 @@ def test_large_movie_dataset(spark: SparkSession, weaviate_client: weaviate.Clie
     result = weaviate_client.query.aggregate("Movies").with_meta_count().do()
     print(result)
     assert result["data"]["Aggregate"]["Movies"][0]["meta"]["count"] == len(movies)
+
+
+def test_streaming(spark: SparkSession, weaviate_client: weaviate.Client, tmp_path):
+    weaviate_client.schema.create_class(movie_schema)
+    basepath = path.dirname(__file__)
+    df = spark.readStream.csv(basepath, schema=movie_spark_schema)
+    df.writeStream.format("io.weaviate.spark.Weaviate") \
+        .option("scheme", "http") \
+        .option("host", "localhost:8080") \
+        .option("className", "Movies") \
+        .option("checkpointLocation", tmp_path.absolute()) \
+        .outputMode("append").start().processAllAvailable()
+    result = weaviate_client.query.aggregate("Movies").with_meta_count().do()
+    # The streaming test occasionally returns 956
+    assert result["data"]["Aggregate"]["Movies"][0]["meta"]["count"] in [955, 956]
