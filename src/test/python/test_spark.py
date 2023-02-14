@@ -114,7 +114,7 @@ def test_string_arrays(spark: SparkSession, weaviate_client: weaviate.Client):
         StructField('title6', StringType(), True),
     ])
     articles = [
-        ("Sam and Sam", ["keyword1", "keyword2"], [""], [""], "", "", "", "", ""),
+        ("Sam and Sam", ["keyword1", "keyword2"], None, [""], "", "", "", "", ""),
         ("", [], [""], [""], "", "", "", "", ""),
     ]
     df = spark.createDataFrame(data=articles, schema=spark_schema)
