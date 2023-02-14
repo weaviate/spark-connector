@@ -80,8 +80,9 @@ def weaviate_client():
             time.sleep(1)
     try:
         wclient.schema.delete_class("Article")
+        wclient.schema.delete_class("Movie")
     except:
-        logging.info("Article schema does not exist")
+        logging.info("Article or Movie schema does not exist")
     yield wclient
     client.containers.get(container_name).remove(force=True)
 
