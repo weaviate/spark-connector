@@ -12,6 +12,7 @@ from pyspark.sql.types import StructType, StructField, StringType, ArrayType, Do
     DateType
 import weaviate
 import pandas as pd
+import py4j
 
 from .movie_schema import movie_schema
 
@@ -199,14 +200,14 @@ def test_id_column(spark: SparkSession, weaviate_client: weaviate.Client):
 
     article2_id = uuid.UUID(int=2)
     articles = [(article2_id, "Sam and Sam")]
-    df = spark.createDataFrame(data=articles, schema=spark_schema)
-    df.write.format("io.weaviate.spark.Weaviate") \
-        .option("scheme", "http") \
-        .option("host", "localhost:8080") \
-        .option("className", "Article") \
-        .option("id", "id") \
-        .mode("append").save()
-    # TODO: Add assertion for log message that shows "id in body must be of type uuid"
+    with pytest.raises(py4j.protocol.Py4JJavaError):
+        df = spark.createDataFrame(data=articles, schema=spark_schema)
+        df.write.format("io.weaviate.spark.Weaviate") \
+            .option("scheme", "http") \
+            .option("host", "localhost:8080") \
+            .option("className", "Article") \
+            .option("id", "id") \
+            .mode("append").save()
 
 
 def test_large_movie_dataset(spark: SparkSession, weaviate_client: weaviate.Client):
