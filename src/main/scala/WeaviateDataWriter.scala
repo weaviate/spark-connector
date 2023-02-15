@@ -101,9 +101,13 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
         case _ => fieldType.dataType
       }
       logError(s"unsafe array ${sparkType}, ${fieldType.name}:${fieldType.dataType}")
-     unsafeArray.toSeq[AnyRef](sparkType)
-        .map(elem => convertFromSpark(elem, StructField("", sparkType, true)))
-        .asJava
+      if (unsafeArray == null && sparkType == StringType ) {
+        return Array[String]()
+      } else {
+        unsafeArray.toSeq[AnyRef](sparkType)
+          .map(elem => convertFromSpark(elem, StructField("", sparkType, true)))
+          .asJava
+      }
     }
     case default =>
       logError(s"Field dataType: ${fieldType.dataType}")
