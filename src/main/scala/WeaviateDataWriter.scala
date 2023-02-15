@@ -79,7 +79,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
           logError(s"UUID (${field}): ${value}, ${uuidStr}, ${record.getUTF8String(i)}")
           builder = builder.id(java.util.UUID.fromString(uuidStr).toString)
         case _ =>
-          logError(s"Handling field ${field.name}")
+          logError(s"Handling field ${field.name} : ${value}")
           properties(field.name) = convertFromSpark(value, field)
       }
     })
