@@ -116,7 +116,20 @@ class SparkIntegrationTest
   }
 
   test("Article with strings and int Streaming Write") {
-    WeaviateDocker.createClass()
+    WeaviateDocker.createClass(
+      Property.builder()
+        .dataType(List[String]("string[]").asJava)
+        .name("keywords")
+        .build(),
+      Property.builder()
+        .dataType(List[String]("string").asJava)
+        .name("customId")
+        .build(),
+      Property.builder()
+        .dataType(List[String]("boolean").asJava)
+        .name("myBool")
+        .build(),
+    )
     import spark.implicits._
     implicit val articleEncoder: Encoder[ArticleWithAll] = Encoders.product[ArticleWithAll]
     val inputStream: MemoryStream[ArticleWithAll] = new MemoryStream[ArticleWithAll](1, spark.sqlContext, Some(1))
@@ -124,13 +137,14 @@ class SparkIntegrationTest
 
     val articles = List.fill(20)(ArticleWithAll("Sam", "Sam and Sam", 3, null, "not-used", true))
 
+   val path = java.nio.file.Files.createTempDirectory("weaviate-spark-connector-streaming-test")
     val streamingWrite = inputStreamDF.writeStream
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
       .option("host", "localhost:8080")
       .option("batchSize", 6)
       .option("className", "Article")
-      .option("checkpointLocation", "/tmp/weaviate-spark-connector-test")
+      .option("checkpointLocation", path.toAbsolutePath.toString)
       .outputMode("append")
       .start()
 
@@ -151,7 +165,7 @@ class SparkIntegrationTest
     assert(props.get("wordCount") == 3)
     assert(results.getResult.size == 20)
     WeaviateDocker.deleteClass()
-    val dir = new Directory(new File("/tmp/weaviate-spark-connector-test"))
+    val dir = new Directory(path.toFile)
     dir.deleteRecursively()
   }
 
