@@ -2,8 +2,10 @@ package io.weaviate.spark
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.{GenericRowWithSchema, UnsafeArrayData, UnsafeRow}
 import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
 import org.apache.spark.sql.types._
+import org.apache.spark.unsafe.types.UTF8String
 import technology.semi.weaviate.client.v1.data.model.WeaviateObject
 
 import scala.collection.mutable
@@ -56,16 +58,52 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     val row = record.toSeq(schema)
     val properties = mutable.Map[String, AnyRef]()
     schema.zipWithIndex.foreach(field =>
-      field._1.name match {
-        case weaviateOptions.vector => builder = builder.vector(record.getArray(field._2).toArray(FloatType))
-        case weaviateOptions.id => builder = builder.id(row(field._2).toString)
-        case _ => properties(field._1.name) = getValueFromField(field._2, record, field._1.dataType)
+      field match {
+        case field if field._1.name == weaviateOptions.vector =>
+          builder = builder.vector(record.getArray(field._2).toArray(FloatType))
+        case field if field._1.name == weaviateOptions.id =>
+          builder = builder.id(row(field._2).toString)
+        case _ => properties(field._1.name) = convertFromSpark(row(field._2), field._1)
       }
     )
     if (weaviateOptions.id == null) {
       builder.id(java.util.UUID.randomUUID.toString)
     }
     builder.properties(properties.asJava).build
+  }
+
+  private def extractStructType(dataType: DataType): StructType = dataType match {
+    case arrayType: ArrayType => extractStructType(arrayType.elementType)
+    case _ => throw new UnsupportedOperationException(s"$dataType not supported")
+  }
+
+  def convertFromSpark(value: Any, fieldType: StructField = null): AnyRef = value match {
+    case int: Int if fieldType.dataType == DateType =>
+      java.time.LocalDate.ofEpochDay(int).toString + "T00:00:00Z"
+    case long: Long if fieldType.dataType == DateType =>
+      java.time.LocalDate.ofEpochDay(long).toString + "T00:00:00Z"
+    case string if fieldType.dataType == StringType =>
+      if (string == null) {
+        ""
+      } else {
+        string.toString
+      }
+//    case unsafeRow: UnsafeRow => {
+//      val structType = extractStructType(fieldType.dataType)
+//      val row = new GenericRowWithSchema(unsafeRow.toSeq(structType).toArray, structType)
+//      convertFromSpark(row)
+//    }
+    case unsafeArray: UnsafeArrayData => {
+      val sparkType = fieldType.dataType match {
+        case arrayType: ArrayType => arrayType.elementType
+        case _ => fieldType.dataType
+      }
+      logError(s"unsafe array ${sparkType}")
+     unsafeArray.toSeq[AnyRef](sparkType)
+        .map(elem => convertFromSpark(elem, StructField("", sparkType, true)))
+        .asJava
+    }
+    case default => default.asInstanceOf[AnyRef]
   }
 
   def getValueFromField(index: Int, record: InternalRow, dataType: DataType): AnyRef = {
