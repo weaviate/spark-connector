@@ -18,7 +18,7 @@ import py4j
 from testcontainers.kafka import KafkaContainer
 from kafka import KafkaProducer
 
-from .movie_schema import movie_schema
+from .movie_schema import movie_schema, movie_spark_schema
 from .event_schema import event_schema, spark_event_schema
 
 
@@ -219,25 +219,29 @@ def test_id_column(spark: SparkSession, weaviate_client: weaviate.Client):
             .mode("append").save()
 
 
-movie_spark_schema = StructType([
-    StructField('movie_id', DoubleType(), True),
-    StructField('best_rating', DoubleType(), True),
-    StructField('worst_rating', DoubleType(), True),
-    StructField('url', StringType(), True),
-    StructField('title', StringType(), True),
-    StructField('poster_link', StringType(), True),
-    StructField('genres', StringType(), True),
-    StructField('actors', StringType(), True),
-    StructField('director', StringType(), True),
-    StructField('description', StringType(), True),
-    StructField('date_published', StringType(), True),
-    StructField('keywords', StringType(), True),
-    StructField('rating_value', DoubleType(), True),
-    StructField('review_aurthor', StringType(), True),
-    StructField('review_date', StringType(), True),
-    StructField('review_body', StringType(), True),
-    StructField('duration', StringType(), True),
-])
+def test_event_data(spark: SparkSession, weaviate_client: weaviate.Client):
+    weaviate_client.schema.create_class(event_schema)
+    article1_id = str(uuid.UUID(int=1))
+    event = {}
+    event["is_live"] = True
+    event["plays"] = ["a"]
+    event["scores"] = ["b"]
+    event["teams"] = ["c"]
+    event["current_period"] = "d"
+    event["id_column"] = str(uuid.uuid4())
+    event["moneyline"] = "money"
+    events = [event]
+    df = spark.createDataFrame(data=events, schema=spark_event_schema)
+    df.write.format("io.weaviate.spark.Weaviate") \
+        .option("scheme", "http") \
+        .option("host", "localhost:8080") \
+        .option("className", "Event") \
+        .option("id", "id_column") \
+        .mode("append").save()
+
+    weaviate_articles = weaviate_client.data_object.get(class_name="Event").get("objects")
+    assert len(weaviate_articles) == 1
+    assert weaviate_articles[0]["id"] == event["id_column"]
 
 
 def test_large_movie_dataset(spark: SparkSession, weaviate_client: weaviate.Client):

@@ -1,3 +1,5 @@
+from pyspark.sql.types import *
+
 movie_schema = {
     "class": "Movies",
     "description": "A collection of movies with title, description, director, actors, rating, etc.",
@@ -89,3 +91,24 @@ movie_schema = {
         }
     ]
 }
+
+
+movie_spark_schema = StructType([
+    StructField('movie_id', DoubleType(), True),
+    StructField('best_rating', DoubleType(), True),
+    StructField('worst_rating', DoubleType(), True),
+    StructField('url', StringType(), True),
+    StructField('title', StringType(), True),
+    StructField('poster_link', StringType(), True),
+    StructField('genres', StringType(), True),
+    StructField('actors', StringType(), True),
+    StructField('director', StringType(), True),
+    StructField('description', StringType(), True),
+    StructField('date_published', StringType(), True),
+    StructField('keywords', StringType(), True),
+    StructField('rating_value', DoubleType(), True),
+    StructField('review_aurthor', StringType(), True),
+    StructField('review_date', StringType(), True),
+    StructField('review_body', StringType(), True),
+    StructField('duration', StringType(), True),
+])
