@@ -11,7 +11,7 @@ case class WeaviateCluster(weaviateOptions: WeaviateOptions, schema: StructType)
   override def name(): String = weaviateOptions.className
 
   override def newWriteBuilder(info: LogicalWriteInfo): WriteBuilder = {
-    WeaviateWriteBuilder(weaviateOptions, schema)
+    WeaviateWriteBuilder(weaviateOptions, info.schema())
   }
   override def capabilities(): util.Set[TableCapability] = Set(
     TableCapability.BATCH_WRITE,
