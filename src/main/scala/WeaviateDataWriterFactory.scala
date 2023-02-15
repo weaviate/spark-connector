@@ -6,7 +6,7 @@ import org.apache.spark.sql.connector.write.{DataWriter, DataWriterFactory}
 import org.apache.spark.sql.types.StructType
 
 case class WeaviateDataWriterFactory(weaviateOptions: WeaviateOptions, schema: StructType)
-  extends DataWriterFactory with StreamingDataWriterFactory with Serializable {
+  extends DataWriterFactory with StreamingDataWriterFactory {
   override def createWriter(partitionId: Int, taskId: Long): DataWriter[InternalRow] = {
     WeaviateDataWriter(weaviateOptions, schema)
   }

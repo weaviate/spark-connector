@@ -2,6 +2,7 @@ package io.weaviate.spark
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.{GenericRowWithSchema, UnsafeArrayData, UnsafeRow}
 import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
 import org.apache.spark.sql.types._
@@ -17,7 +18,8 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
   extends DataWriter[InternalRow] with Serializable with Logging {
   var batch = mutable.Map[String, WeaviateObject]()
 
-  override def write(record: InternalRow): Unit = {
+  override def write(row: InternalRow): Unit = {
+    val record = row.copy()
     if (record.numFields != schema.length) {
       throw WeaviateSparkNumberOfFieldsException(
         s"The record being written had ${record.numFields} fields, however there is only a schema" +
@@ -62,9 +64,10 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     var builder = WeaviateObject.builder.className(weaviateOptions.className)
     logError(s"Schema: ${schema.length}, ${schema}")
     val row = record.toSeq(schema)
+
+    val genericRow = new GenericRowWithSchema(record.toSeq(schema).toArray, schema)
     logError(s"Record ${record.numFields}: ${record}")
-    logError(s"Record.toSeq ${row.length}: ${row}")
-    Generic
+    logError(s"Record.toSeq ${genericRow.length}: ${genericRow}")
     val properties = mutable.Map[String, AnyRef]()
     (0 to schema.size - 1).map(i => {
       val field = schema(i)
@@ -99,17 +102,15 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
   }
 
   private def extractStructType(dataType: DataType): StructType = dataType match {
-    case structType: StructType => structType
-    case mapType: MapType => extractStructType(mapType.valueType)
     case arrayType: ArrayType => extractStructType(arrayType.elementType)
     case _ => throw new UnsupportedOperationException(s"$dataType not supported")
   }
 
   def convertFromSpark(value: Any, fieldType: StructField = null): AnyRef = value match {
-//    case int: Int if fieldType.dataType == DateType =>
-//      java.time.LocalDate.ofEpochDay(int).toString + "T00:00:00Z"
-//    case long: Long if fieldType.dataType == DateType =>
-//      java.time.LocalDate.ofEpochDay(long).toString + "T00:00:00Z"
+    case int: Int if fieldType.dataType == DateType =>
+      java.time.LocalDate.ofEpochDay(int).toString + "T00:00:00Z"
+    case long: Long if fieldType.dataType == DateType =>
+      java.time.LocalDate.ofEpochDay(long).toString + "T00:00:00Z"
     case string if fieldType.dataType == StringType =>
       if (string == null) {
         ""
@@ -127,18 +128,16 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
         case arrayType: ArrayType => arrayType.elementType
         case _ => fieldType.dataType
       }
-
       logError(s"unsafe array ${sparkType}, ${fieldType.name}:${fieldType.dataType}")
-      Array[AnyRef]()
-      //if (unsafeArray == null || unsafeArray.numElements() == 0) {
-      //  logError("unsafe Array empty")
-      //  Array[AnyRef]()
-      //} else {
-      //  logError("unsafe Array not empty")
-      //  unsafeArray.toSeq[AnyRef](sparkType)
-      //    .map(elem => convertFromSpark(elem, StructField("", sparkType, true)))
-      //    .asJava
-      //}
+      if (unsafeArray == null || unsafeArray.numElements() == 0) {
+        logError("unsafe Array empty")
+        Array[AnyRef]()
+      } else {
+        logError("unsafe Array not empty")
+        unsafeArray.toSeq[AnyRef](sparkType)
+          .map(elem => convertFromSpark(elem, StructField("", sparkType, true)))
+          .asJava
+      }
     }
     case string: UTF8String => string.toString
     case default =>

@@ -308,6 +308,7 @@ def test_kafka_streaming(spark: SparkSession, weaviate_client: weaviate.Client, 
             "keywords": ["article"] if i == 1 else None,
             "bool": True, "someint": 1, "anotherString": None,
             "floatyfloat": 0.12345,
+            "my_id": str(uuid.uuid4()),
         })
         kafka_result.get(timeout=60)
 
@@ -318,6 +319,7 @@ def test_kafka_streaming(spark: SparkSession, weaviate_client: weaviate.Client, 
         StructField('someint', IntegerType(), True),
         StructField('anotherString', StringType(), True),
         StructField('floatyfloat', DoubleType(), True),
+        StructField('my_id', StringType(), True),
     ])
     df = spark \
         .readStream \
@@ -336,6 +338,7 @@ def test_kafka_streaming(spark: SparkSession, weaviate_client: weaviate.Client, 
         .option("scheme", "http")
         .option("host", "localhost:8080")
         .option("className", "Article")
+        .option("id", "my_id")
         .option("checkpointLocation", tmp_path.absolute())
         .outputMode("append")
         .start()
@@ -348,13 +351,18 @@ def test_kafka_streaming(spark: SparkSession, weaviate_client: weaviate.Client, 
 def test_kafka_streaming_event_data(spark: SparkSession, weaviate_client: weaviate.Client, tmp_path, kafka_host):
     weaviate_client.schema.create_class(event_schema)
     producer = KafkaProducer(bootstrap_servers=[kafka_host],
-                             value_serializer=lambda m: json.dumps(m).encode('ascii'))
+                             value_serializer=lambda m: json.dumps(m).encode('utf-8'))
 
     basepath = path.dirname(__file__)
     events_path = path.abspath(path.join(basepath, "events.json"))
     with open(events_path) as f:
         events = json.loads(f.read())
     for event in events:
+        event["is_live"] = True
+        event["plays"] = ["s"]
+        event["scores"] = ["s"]
+        event["teams"] = ["s"]
+        event["current_period"] = ["s"]
         kafka_result = producer.send('weaviate-test', event)
         kafka_result.get(timeout=60)
 
@@ -366,6 +374,8 @@ def test_kafka_streaming_event_data(spark: SparkSession, weaviate_client: weavia
         .load() \
         .select(from_json(col("value").cast("string"), spark_event_schema).alias("parsed_value")) \
         .select(col("parsed_value.*"))
+
+    # df.writeStream.format("console").outputMode("append").start().processAllAvailable()
 
     write_stream = (
         df.writeStream
