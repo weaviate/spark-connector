@@ -358,20 +358,12 @@ def test_kafka_streaming_event_data(spark: SparkSession, weaviate_client: weavia
                              value_serializer=lambda m: json.dumps(m).encode('ascii'))
 
     basepath = path.dirname(__file__)
-#    events_path = path.abspath(path.join(basepath, "events.json"))
-#    with open(events_path) as f:
-#        events = json.loads(f.read())
-#    for event in events:
-    event = {}
-    event["is_live"] = True
-    event["plays"] = ["a"]
-    event["scores"] = ["b"]
-    event["teams"] = ["c"]
-    event["current_period"] = "d"
-    event["id_column"] = str(uuid.uuid4())
-    event["moneyline"] = "money"
-    kafka_result = producer.send('weaviate-test', event)
-    kafka_result.get(timeout=60)
+    events_path = path.abspath(path.join(basepath, "events.json"))
+    with open(events_path) as f:
+        events = json.loads(f.read())
+    for event in events:
+        kafka_result = producer.send('weaviate-test', event)
+        kafka_result.get(timeout=60)
 
     df = spark.readStream \
         .format("kafka") \
@@ -397,4 +389,5 @@ def test_kafka_streaming_event_data(spark: SparkSession, weaviate_client: weavia
     )
     write_stream.processAllAvailable()
     result = weaviate_client.query.aggregate("Event").with_meta_count().do()
-    assert result["data"]["Aggregate"]["Event"][0]["meta"]["count"] == len(events)
+    events_uuids = set([e["id_column"] for e in events])
+    assert result["data"]["Aggregate"]["Event"][0]["meta"]["count"] == len(events_uuids)
