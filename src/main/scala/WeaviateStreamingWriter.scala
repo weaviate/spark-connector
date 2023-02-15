@@ -9,7 +9,7 @@ case class WeaviateStreamingWriter(weaviateOptions: WeaviateOptions, schema: Str
   extends StreamingWrite with Logging {
 
   override def createStreamingWriterFactory(info: PhysicalWriteInfo): StreamingDataWriterFactory = {
-    WeaviateDataWriterFactory(weaviateOptions, schema)
+    WeaviateStreamingDataWriterFactory(weaviateOptions, schema)
   }
 
   override def abort(epochId: Long, messages: Array[WriterCommitMessage]): Unit = {}
