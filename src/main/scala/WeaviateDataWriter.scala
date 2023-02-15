@@ -18,6 +18,11 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
   var batch = mutable.Map[String, WeaviateObject]()
 
   override def write(record: InternalRow): Unit = {
+    if (record.numFields != schema.length) {
+      throw WeaviateSparkNumberOfFieldsException(
+        s"The record being written had ${record.numFields} fields, however there is only a schema" +
+          s" defined for ${schema.length}. Schema: ${schema}")
+    }
     val weaviateObject = buildWeaviateObject(record)
     batch += (weaviateObject.getId -> weaviateObject)
 
@@ -55,13 +60,14 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
 
   private[spark] def buildWeaviateObject(record: InternalRow): WeaviateObject = {
     var builder = WeaviateObject.builder.className(weaviateOptions.className)
+    logError(s"Record: ${record}")
+    logError(s"Schema: ${schema.length}, ${schema}")
     val row = record.toSeq(schema)
     val properties = mutable.Map[String, AnyRef]()
     schema.zipWithIndex.foreach(field =>
-      field match {
-        case field if field._1.name == weaviateOptions.vector =>
-          builder = builder.vector(record.getArray(field._2).toArray(FloatType))
-        case field if field._1.name == weaviateOptions.id =>
+      field._1.name match {
+        case weaviateOptions.vector => builder = builder.vector(record.getArray(field._2).toArray(FloatType))
+        case weaviateOptions.id =>
           builder = builder.id(row(field._2).toString)
         case _ => properties(field._1.name) = convertFromSpark(row(field._2), field._1)
       }
@@ -86,24 +92,22 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       if (string == null) {
         ""
       } else {
+        logError("Before toString")
         string.toString
       }
-//    case unsafeRow: UnsafeRow => {
-//      val structType = extractStructType(fieldType.dataType)
-//      val row = new GenericRowWithSchema(unsafeRow.toSeq(structType).toArray, structType)
-//      convertFromSpark(row)
-//    }
     case unsafeArray: UnsafeArrayData => {
       val sparkType = fieldType.dataType match {
         case arrayType: ArrayType => arrayType.elementType
         case _ => fieldType.dataType
       }
-      logError(s"unsafe array ${sparkType}")
+      logError(s"unsafe array ${sparkType}, ${fieldType.name}:${fieldType.dataType}")
      unsafeArray.toSeq[AnyRef](sparkType)
         .map(elem => convertFromSpark(elem, StructField("", sparkType, true)))
         .asJava
     }
-    case default => default.asInstanceOf[AnyRef]
+    case default =>
+      logError(s"Field dataType: ${fieldType.dataType}")
+      default.asInstanceOf[AnyRef]
   }
 
   def getValueFromField(index: Int, record: InternalRow, dataType: DataType): AnyRef = {

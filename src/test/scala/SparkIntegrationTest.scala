@@ -116,13 +116,26 @@ class SparkIntegrationTest
   }
 
   test("Article with strings and int Streaming Write") {
-    WeaviateDocker.createClass()
+    WeaviateDocker.createClass(
+      Property.builder()
+      .dataType(List[String]("string[]").asJava)
+      .name("keywords")
+      .build(),
+      Property.builder()
+        .dataType(List[String]("string").asJava)
+        .name("customId")
+        .build(),
+      Property.builder()
+        .dataType(List[String]("boolean").asJava)
+        .name("myBool")
+        .build(),
+    )
     import spark.implicits._
     implicit val articleEncoder: Encoder[ArticleWithAll] = Encoders.product[ArticleWithAll]
     val inputStream: MemoryStream[ArticleWithAll] = new MemoryStream[ArticleWithAll](1, spark.sqlContext, Some(1))
     val inputStreamDF = inputStream.toDF
 
-    val articles = List.fill(20)(ArticleWithAll("Sam", "Sam and Sam", 3, null, "not-used", true))
+    val articles = List.fill(20)(ArticleWithAll("Sam", "Sam and Sam", 3, Array("test"), "not-used", true))
 
     val streamingWrite = inputStreamDF.writeStream
       .format("io.weaviate.spark.Weaviate")

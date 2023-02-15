@@ -363,7 +363,6 @@ def test_kafka_streaming_event_data(spark: SparkSession, weaviate_client: weavia
         .option("kafka.bootstrap.servers", kafka_host) \
         .option("subscribe", "weaviate-test") \
         .option("startingOffsets", "earliest") \
-        .option("id", "id_column") \
         .load() \
         .select(from_json(col("value").cast("string"), spark_event_schema).alias("parsed_value")) \
         .select(col("parsed_value.*"))
@@ -374,6 +373,7 @@ def test_kafka_streaming_event_data(spark: SparkSession, weaviate_client: weavia
         .option("scheme", "http")
         .option("host", "localhost:8080")
         .option("className", "Event")
+        .option("id", "id_column")
         .option("checkpointLocation", tmp_path.absolute())
         .outputMode("append")
         .start()
