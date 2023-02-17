@@ -86,11 +86,11 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       case DoubleType => if (record.isNullAt(index)) Double.box(0.0) else Double.box(record.getDouble(index))
       case ArrayType(FloatType, true) => throw new SparkDataTypeNotSupported(
         "Array of FloatType is not supported. Convert to Spark Array of DoubleType instead")
-      case ArrayType(DoubleType, true) =>
+      case ArrayType(DoubleType, true) |  ArrayType(DoubleType, false) =>
         if (record.isNullAt(index)) Array[Double]() else record.getArray(index).toDoubleArray()
-      case ArrayType(IntegerType, true) =>
+      case ArrayType(IntegerType, true) | ArrayType(IntegerType, false) =>
         if (record.isNullAt(index)) Array[Int]() else record.getArray(index).toIntArray()
-      case ArrayType(StringType, true) =>
+      case ArrayType(StringType, true) | ArrayType(StringType, false) =>
         if (record.isNullAt(index)) {
           Array[String]()
         } else {
