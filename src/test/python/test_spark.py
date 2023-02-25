@@ -173,12 +173,13 @@ def test_null_values(spark: SparkSession, weaviate_client: weaviate.Client):
     assert article["properties"]["title"] == ""
     assert article["properties"]["keywords"] == [""]
     assert article["properties"]["keywords2"] == []
-    assert article["properties"]["double"] == 0.0
-    assert article["properties"]["doubleArray"] == []
-    assert article["properties"]["integer"] == 0
-    assert article["properties"]["integerArray"] == []
-    assert article["properties"]["bool"] == False
-    assert article["properties"]["date"] == "1970-01-01T00:00:00Z"
+    # null values aren't stored
+    assert "date" not in article["properties"]
+    assert "double" not in article["properties"]
+    assert "doubleArray" not in article["properties"]
+    assert "integer" not in article["properties"]
+    assert "integerArray" not in article["properties"]
+    assert "bool" not in article["properties"]
 
 
 def test_id_column(spark: SparkSession, weaviate_client: weaviate.Client):

@@ -5,7 +5,6 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{GenericRowWithSchema, UnsafeArrayData, UnsafeRow}
 import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
 import org.apache.spark.sql.types._
-import org.json4s.scalap.scalasig.ClassFileParser.field
 import technology.semi.weaviate.client.v1.data.model.WeaviateObject
 
 import scala.collection.mutable
@@ -17,8 +16,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
   extends DataWriter[InternalRow] with Serializable with Logging {
   var batch = mutable.Map[String, WeaviateObject]()
 
-  override def write(row: InternalRow): Unit = {
-    val record = row.copy()
+  override def write(record: InternalRow): Unit = {
     if (record.numFields != schema.length) {
       throw WeaviateSparkNumberOfFieldsException(
         s"The record being written had ${record.numFields} fields, however there is only a schema" +
@@ -26,7 +24,6 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     }
     val weaviateObject = buildWeaviateObject(record)
     batch += (weaviateObject.getId -> weaviateObject)
-
     if (batch.size >= weaviateOptions.batchSize) writeBatch()
   }
 
@@ -55,8 +52,8 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       writeBatch(retries - 1)
     } else {
       logInfo(s"Writing batch successful. IDs of inserted objects: ${IDs}")
-      batch.clear()
     }
+    batch.clear()
   }
 
   private[spark] def buildWeaviateObject(record: InternalRow): WeaviateObject = {
