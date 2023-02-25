@@ -2,8 +2,10 @@ package io.weaviate.spark
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.{GenericRowWithSchema, UnsafeArrayData, UnsafeRow}
 import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
 import org.apache.spark.sql.types._
+import org.json4s.scalap.scalasig.ClassFileParser.field
 import technology.semi.weaviate.client.v1.data.model.WeaviateObject
 
 import scala.collection.mutable
@@ -15,7 +17,13 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
   extends DataWriter[InternalRow] with Serializable with Logging {
   var batch = mutable.Map[String, WeaviateObject]()
 
-  override def write(record: InternalRow): Unit = {
+  override def write(row: InternalRow): Unit = {
+    val record = row.copy()
+    if (record.numFields != schema.length) {
+      throw WeaviateSparkNumberOfFieldsException(
+        s"The record being written had ${record.numFields} fields, however there is only a schema" +
+          s" defined for ${schema.length}. Schema: ${schema}")
+    }
     val weaviateObject = buildWeaviateObject(record)
     batch += (weaviateObject.getId -> weaviateObject)
 
@@ -53,59 +61,78 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
 
   private[spark] def buildWeaviateObject(record: InternalRow): WeaviateObject = {
     var builder = WeaviateObject.builder.className(weaviateOptions.className)
+    val row = record.toSeq(schema)
+
     val properties = mutable.Map[String, AnyRef]()
-    schema.zipWithIndex.foreach(field =>
-      field._1.name match {
-        case weaviateOptions.vector => builder = builder.vector(record.getArray(field._2).toArray(FloatType))
-        case weaviateOptions.id => builder = builder.id(record.getString(field._2))
-        case _ => properties(field._1.name) = getValueFromField(field._2, record, field._1.dataType)
+
+    (0 to schema.size - 1).map(i => {
+      val field = schema(i)
+      throwForUnSupportedTypes(field)
+      val value = row(i)
+      field.name match {
+        case weaviateOptions.vector => builder = builder.vector(record.getArray(i).toArray(FloatType))
+        case weaviateOptions.id =>
+          val uuidStr = convertFromSpark(value, field).toString
+          builder = builder.id(java.util.UUID.fromString(uuidStr).toString)
+        case _ =>
+          properties(field.name) = convertFromSpark(value, field)
       }
-    )
+    })
     if (weaviateOptions.id == null) {
       builder.id(java.util.UUID.randomUUID.toString)
     }
     builder.properties(properties.asJava).build
   }
 
-  def getValueFromField(index: Int, record: InternalRow, dataType: DataType): AnyRef = {
-    dataType match {
-      case StringType => if (record.isNullAt(index)) "" else record.getUTF8String(index).toString
-      case BooleanType => if (record.isNullAt(index)) Boolean.box(false) else Boolean.box(record.getBoolean(index))
-      case ByteType => throw new SparkDataTypeNotSupported(
-        "ByteType is not supported. Convert to Spark IntegerType instead")
-      case ShortType => throw new SparkDataTypeNotSupported(
-        "ShortType is not supported. Convert to Spark IntegerType instead")
-      case IntegerType => if (record.isNullAt(index)) Int.box(0) else Int.box(record.getInt(index))
-      case LongType => throw new SparkDataTypeNotSupported(
-        "LongType is not supported. Convert to Spark IntegerType instead")
-      // FloatType is a 4 byte data structure however in Weaviate float64 is using
-      // 8 bytes. So the 2 are not compatible and DoubleType (8 bytes) must be used.
-      // inferSchema will always return DoubleType when it reads the Schema from Weaviate
-      case FloatType => throw new SparkDataTypeNotSupported(
-        "FloatType is not supported. Convert to Spark DoubleType instead")
-      case DoubleType => if (record.isNullAt(index)) Double.box(0.0) else Double.box(record.getDouble(index))
-      case ArrayType(FloatType, true) => throw new SparkDataTypeNotSupported(
-        "Array of FloatType is not supported. Convert to Spark Array of DoubleType instead")
-      case ArrayType(DoubleType, true) |  ArrayType(DoubleType, false) =>
-        if (record.isNullAt(index)) Array[Double]() else record.getArray(index).toDoubleArray()
-      case ArrayType(IntegerType, true) | ArrayType(IntegerType, false) =>
-        if (record.isNullAt(index)) Array[Int]() else record.getArray(index).toIntArray()
-      case ArrayType(StringType, true) | ArrayType(StringType, false) =>
-        if (record.isNullAt(index)) {
-          Array[String]()
-        } else {
-          record.getArray(index).toObjectArray(StringType).map(
-            x => Option(x).filter(_ != null).map(_.toString).getOrElse(""))
-        }
-      case ArrayType(LongType, true) => throw new SparkDataTypeNotSupported(
-        "Array of LongType is not supported. Convert to Spark Array of IntegerType instead")
-      case DateType =>
-        // Weaviate requires an RFC3339 formatted string and Spark stores a long that
-        // contains the the days since EPOCH for DateType
-        val daysSinceEpoch = record.getLong(index)
-        java.time.LocalDate.ofEpochDay(daysSinceEpoch).toString + "T00:00:00Z"
-      case default => throw new SparkDataTypeNotSupported(s"DataType ${default} is not supported by Weaviate")
-    }
+  def throwForUnSupportedTypes(field: StructField): Unit = field.dataType match {
+    case _: MapType => throw SparkDataTypeNotSupported(s"f")
+    case ByteType | ShortType | LongType => throw new SparkDataTypeNotSupported(
+      s"Field '${field.name} of type ${field.dataType.toString} is not supported. " +
+        s"Convert to Spark IntegerType instead")
+    case FloatType => throw new SparkDataTypeNotSupported(
+      "FloatType is not supported. Convert to Spark DoubleType instead")
+    case ArrayType(FloatType, true) => throw new SparkDataTypeNotSupported(
+      "Array of FloatType is not supported. Convert to Spark Array of DoubleType instead")
+    case ArrayType(LongType, true) => throw new SparkDataTypeNotSupported(
+      "Array of LongType is not supported. Convert to Spark Array of IntegerType instead")
+    case _ =>
+  }
+
+
+  private def extractStructType(dataType: DataType): StructType = dataType match {
+    case arrayType: ArrayType => extractStructType(arrayType.elementType)
+    case _ => throw SparkDataTypeNotSupported(s"$dataType not supported")
+  }
+
+  def convertFromSpark(value: Any, field: StructField = null): AnyRef = value match {
+    case x: Long if field.dataType == DateType =>
+      java.time.LocalDate.ofEpochDay(x).toString + "T00:00:00Z"
+    case x: Int if field.dataType == DateType =>
+      java.time.LocalDate.ofEpochDay(x).toString + "T00:00:00Z"
+    case string if field.dataType == StringType =>
+      if (string == null) {
+        ""
+      } else {
+        string.toString
+      }
+    case unsafeRow: UnsafeRow =>
+      val structType = extractStructType(field.dataType)
+      val row = new GenericRowWithSchema(unsafeRow.toSeq(structType).toArray, structType)
+      convertFromSpark(row)
+    case unsafeArray: UnsafeArrayData =>
+      val sparkType = field.dataType match {
+        case arrayType: ArrayType => arrayType.elementType
+        case _ => field.dataType
+      }
+      if (unsafeArray == null || unsafeArray.numElements() == 0) {
+        Array[AnyRef]()
+      } else {
+        unsafeArray.toSeq[AnyRef](sparkType)
+          .map(elem => convertFromSpark(elem, StructField("", sparkType, true)))
+          .asJava
+      }
+    case default =>
+      default.asInstanceOf[AnyRef]
   }
 
   override def close(): Unit = {
