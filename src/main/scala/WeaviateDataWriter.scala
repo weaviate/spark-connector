@@ -64,7 +64,6 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
 
     (0 to schema.size - 1).map(i => {
       val field = schema(i)
-      throwForUnSupportedTypes(field)
       val value = row(i)
       field.name match {
         case weaviateOptions.vector => builder = builder.vector(record.getArray(i).toArray(FloatType))
@@ -72,6 +71,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
           val uuidStr = convertFromSpark(value, field).toString
           builder = builder.id(java.util.UUID.fromString(uuidStr).toString)
         case _ =>
+          throwForUnSupportedTypes(field)
           properties(field.name) = convertFromSpark(value, field)
       }
     })
