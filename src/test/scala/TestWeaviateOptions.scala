@@ -33,6 +33,37 @@ class TestWeaviateOptions extends AnyFunSuite {
     assert(weaviateOptions.retriesBackoff == 5)
   }
 
+  test("Test fields are set correctly, timeout is set") {
+    val options: CaseInsensitiveStringMap =
+      new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost",
+        "className" -> "pinball", "batchSize" -> "19", "retries" -> "5", "retriesBackoff" -> "5",
+        "timeout" -> "120").asJava)
+    val weaviateOptions: WeaviateOptions = new WeaviateOptions(options)
+
+    assert(weaviateOptions.scheme == "http")
+    assert(weaviateOptions.host == "localhost")
+    assert(weaviateOptions.className == "pinball")
+    assert(weaviateOptions.batchSize == 19)
+    assert(weaviateOptions.retries == 5)
+    assert(weaviateOptions.retriesBackoff == 5)
+    assert(weaviateOptions.timeout == 120)
+  }
+
+  test("Test fields are set correctly, timeout is defaulted") {
+    val options: CaseInsensitiveStringMap =
+      new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost",
+        "className" -> "pinball", "batchSize" -> "19", "retries" -> "5", "retriesBackoff" -> "5").asJava)
+    val weaviateOptions: WeaviateOptions = new WeaviateOptions(options)
+
+    assert(weaviateOptions.scheme == "http")
+    assert(weaviateOptions.host == "localhost")
+    assert(weaviateOptions.className == "pinball")
+    assert(weaviateOptions.batchSize == 19)
+    assert(weaviateOptions.retries == 5)
+    assert(weaviateOptions.retriesBackoff == 5)
+    assert(weaviateOptions.timeout == 60)
+  }
+
   test("Test that getConnection returns the same WeaviateClient object") {
     val options: CaseInsensitiveStringMap =
       new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost:8080", "className" -> "pinball", "batchSize" -> "19").asJava)
