@@ -13,7 +13,7 @@ lazy val root = (project in file("."))
 ThisBuild / scalafixDependencies += "org.scalalint" %% "rules" % "0.1.4"
 
 lazy val sparkVersion = "3.3.1"
-lazy val weaviateClientVersion = "3.5.0"
+lazy val weaviateClientVersion = "3.6.3"
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.2.14" % "test",
   "org.apache.spark" %% "spark-core" % sparkVersion % "provided,test",
@@ -60,6 +60,15 @@ ThisBuild / licenses := List(
   "Weaviate B.V. License" -> new URL("https://github.com/weaviate/spark-connector/blob/main/LICENSE")
 )
 ThisBuild / homepage := Some(url("https://github.com/weaviate/spark-connector"))
+
+// Fix for "deduplicate: different file contents found in the following" error
+ThisBuild / assemblyMergeStrategy  := {
+  case PathList("module-info.class") => MergeStrategy.discard
+  case x if x.endsWith("/module-info.class") => MergeStrategy.discard
+  case x =>
+    val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
+    oldStrategy(x)
+}
 
 // Remove all additional repository other than Maven Central from POM
 pomIncludeRepository := { _ => false }

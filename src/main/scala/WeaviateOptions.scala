@@ -9,6 +9,7 @@ class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
   private val DEFAULT_BATCH_SIZE = 100
   private val DEFAULT_RETRIES = 2
   private val DEFAULT_RETRIES_BACKOFF = 2
+  private val DEFAULT_TIMEOUT_SECONDS = 60
 
   val batchSize: Int =
     config
@@ -20,12 +21,13 @@ class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
   val id: String = config.get(WEAVIATE_ID_COLUMN_CONF)
   val retries: Int = config.getInt(WEAVIATE_RETRIES_CONF, DEFAULT_RETRIES)
   val retriesBackoff: Int = config.getInt(WEAVIATE_RETRIES_BACKOFF_CONF, DEFAULT_RETRIES_BACKOFF)
+  val timeout: Int = config.getInt(WEAVIATE_TIMEOUT, DEFAULT_TIMEOUT_SECONDS)
 
   var client: WeaviateClient = _
 
   def getClient(): WeaviateClient = {
     if (client != null) return client
-    val config = new Config(scheme, host)
+    val config = new Config(scheme, host, null, timeout, timeout, timeout)
     client = new WeaviateClient(config)
     client
   }
@@ -40,4 +42,5 @@ object WeaviateOptions {
   val WEAVIATE_ID_COLUMN_CONF: String  = "id"
   val WEAVIATE_RETRIES_CONF: String = "retries"
   val WEAVIATE_RETRIES_BACKOFF_CONF: String = "retriesBackoff"
+  val WEAVIATE_TIMEOUT: String = "timeout"
 }
