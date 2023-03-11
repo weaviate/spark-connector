@@ -3,7 +3,7 @@ package io.weaviate.spark
 import WeaviateOptions._
 
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
-import technology.semi.weaviate.client.{Config, WeaviateClient}
+import technology.semi.weaviate.client.{Config, WeaviateClient, WeaviateAuthClient}
 
 class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
   private val DEFAULT_BATCH_SIZE = 100
@@ -22,13 +22,29 @@ class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
   val retries: Int = config.getInt(WEAVIATE_RETRIES_CONF, DEFAULT_RETRIES)
   val retriesBackoff: Int = config.getInt(WEAVIATE_RETRIES_BACKOFF_CONF, DEFAULT_RETRIES_BACKOFF)
   val timeout: Int = config.getInt(WEAVIATE_TIMEOUT, DEFAULT_TIMEOUT_SECONDS)
+  val oidcUsername: String = config.getOrDefault(WEAVIATE_OIDC_USERNAME, "")
+  val oidcPassword: String = config.getOrDefault(WEAVIATE_OIDC_PASSWORD, "")
+  val oidcClientSecret: String = config.getOrDefault(WEAVIATE_OIDC_CLIENT_SECRET, "")
+  val oidcAccessToken: String = config.getOrDefault(WEAVIATE_OIDC_ACCESS_TOKEN, "")
+  val oidcAccessTokenLifetime: Long = config.getLong(WEAVIATE_OIDC_ACCESS_TOKEN_LIFETIME, 0)
+  val oidcRefreshToken: String = config.getOrDefault(WEAVIATE_OIDC_REFRESH_TOKEN, "")
 
   var client: WeaviateClient = _
 
   def getClient(): WeaviateClient = {
     if (client != null) return client
     val config = new Config(scheme, host, null, timeout, timeout, timeout)
-    client = new WeaviateClient(config)
+
+    if (!oidcUsername.isBlank() && !oidcPassword.isBlank()) {
+      client = WeaviateAuthClient.clientPassword(config, oidcUsername, oidcPassword, null)
+    } else if (!oidcClientSecret.isBlank()) {
+      client = WeaviateAuthClient.clientCredentials(config, oidcClientSecret, null)
+    } else if (!oidcAccessToken.isBlank()) {
+      client = WeaviateAuthClient.bearerToken(config, oidcAccessToken, oidcAccessTokenLifetime, oidcRefreshToken)
+    } else {
+      client = new WeaviateClient(config)
+    }
+
     client
   }
 }
@@ -43,4 +59,10 @@ object WeaviateOptions {
   val WEAVIATE_RETRIES_CONF: String = "retries"
   val WEAVIATE_RETRIES_BACKOFF_CONF: String = "retriesBackoff"
   val WEAVIATE_TIMEOUT: String = "timeout"
+  val WEAVIATE_OIDC_USERNAME: String = "oidc:username"
+  val WEAVIATE_OIDC_PASSWORD: String = "oidc:password"
+  val WEAVIATE_OIDC_CLIENT_SECRET: String = "oidc:clientSecret"
+  val WEAVIATE_OIDC_ACCESS_TOKEN: String = "oidc:accessToken"
+  val WEAVIATE_OIDC_ACCESS_TOKEN_LIFETIME: String = "oidc:accessTokenLifetime"
+  val WEAVIATE_OIDC_REFRESH_TOKEN: String = "oidc:refreshToken"
 }
