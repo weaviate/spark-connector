@@ -13,12 +13,12 @@ You can download the latest JAR from [GitHub releases here](https://github.com/w
 ### Building the JAR yourself
 To use in your own Spark job you will first need to build the fat jar of the package by running
 `sbt assembly` which will create the artifact in
-`./target/scala-2.12/spark-connector-assembly-1.2.1.jar
+`./target/scala-2.12/spark-connector-assembly-1.2.2.jar
 
 ### Using the JAR in Spark
 You can configure spark-shell or tools like spark-submit to use the JAR like this:
 ```shell
-spark-shell --jars spark-connector-assembly-1.2.1.jar
+spark-shell --jars spark-connector-assembly-1.2.2.jar
 ```
 
 ### Using the JAR in Databricks
