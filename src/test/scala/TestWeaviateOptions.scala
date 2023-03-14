@@ -64,6 +64,94 @@ class TestWeaviateOptions extends AnyFunSuite {
     assert(weaviateOptions.timeout == 60)
   }
 
+  test("Test OIDC fields are set correctly (username, password)") {
+    val options: CaseInsensitiveStringMap =
+      new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost",
+        "className" -> "pinball", "batchSize" -> "19", "retries" -> "5", "retriesBackoff" -> "5",
+        "oidc:username" -> "user", "oidc:password" -> "pass").asJava)
+    val weaviateOptions: WeaviateOptions = new WeaviateOptions(options)
+
+    assert(weaviateOptions.scheme == "http")
+    assert(weaviateOptions.host == "localhost")
+    assert(weaviateOptions.className == "pinball")
+    assert(weaviateOptions.batchSize == 19)
+    assert(weaviateOptions.retries == 5)
+    assert(weaviateOptions.retriesBackoff == 5)
+    assert(weaviateOptions.timeout == 60)
+    assert(weaviateOptions.oidcUsername == "user")
+    assert(weaviateOptions.oidcPassword == "pass")
+    assert(weaviateOptions.oidcClientSecret == "")
+    assert(weaviateOptions.oidcAccessToken == "")
+    assert(weaviateOptions.oidcAccessTokenLifetime == 0)
+    assert(weaviateOptions.oidcRefreshToken == "")
+  }
+
+  test("Test OIDC fields are set correctly (clientSecret)") {
+    val options: CaseInsensitiveStringMap =
+      new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost",
+        "className" -> "pinball", "batchSize" -> "19", "retries" -> "5", "retriesBackoff" -> "5",
+        "oidc:clientSecret" -> "secret").asJava)
+    val weaviateOptions: WeaviateOptions = new WeaviateOptions(options)
+
+    assert(weaviateOptions.scheme == "http")
+    assert(weaviateOptions.host == "localhost")
+    assert(weaviateOptions.className == "pinball")
+    assert(weaviateOptions.batchSize == 19)
+    assert(weaviateOptions.retries == 5)
+    assert(weaviateOptions.retriesBackoff == 5)
+    assert(weaviateOptions.timeout == 60)
+    assert(weaviateOptions.oidcUsername == "")
+    assert(weaviateOptions.oidcPassword == "")
+    assert(weaviateOptions.oidcClientSecret == "secret")
+    assert(weaviateOptions.oidcAccessToken == "")
+    assert(weaviateOptions.oidcAccessTokenLifetime == 0)
+    assert(weaviateOptions.oidcRefreshToken == "")
+  }
+
+  test("Test OIDC fields are set correctly (accessToken)") {
+    val options: CaseInsensitiveStringMap =
+      new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost",
+        "className" -> "pinball", "batchSize" -> "19", "retries" -> "5", "retriesBackoff" -> "5",
+        "oidc:accessToken" -> "accessToken").asJava)
+    val weaviateOptions: WeaviateOptions = new WeaviateOptions(options)
+
+    assert(weaviateOptions.scheme == "http")
+    assert(weaviateOptions.host == "localhost")
+    assert(weaviateOptions.className == "pinball")
+    assert(weaviateOptions.batchSize == 19)
+    assert(weaviateOptions.retries == 5)
+    assert(weaviateOptions.retriesBackoff == 5)
+    assert(weaviateOptions.timeout == 60)
+    assert(weaviateOptions.oidcUsername == "")
+    assert(weaviateOptions.oidcPassword == "")
+    assert(weaviateOptions.oidcClientSecret == "")
+    assert(weaviateOptions.oidcAccessToken == "accessToken")
+    assert(weaviateOptions.oidcAccessTokenLifetime == 0)
+    assert(weaviateOptions.oidcRefreshToken == "")
+  }
+
+  test("Test OIDC fields are set correctly (accessToken, accessTokenLifetime, refreshToken)") {
+    val options: CaseInsensitiveStringMap =
+      new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost",
+        "className" -> "pinball", "batchSize" -> "19", "retries" -> "5", "retriesBackoff" -> "5",
+        "oidc:accessToken" -> "accessToken", "oidc:accessTokenLifetime" -> "100", "oidc:refreshToken" -> "refreshToken").asJava)
+    val weaviateOptions: WeaviateOptions = new WeaviateOptions(options)
+
+    assert(weaviateOptions.scheme == "http")
+    assert(weaviateOptions.host == "localhost")
+    assert(weaviateOptions.className == "pinball")
+    assert(weaviateOptions.batchSize == 19)
+    assert(weaviateOptions.retries == 5)
+    assert(weaviateOptions.retriesBackoff == 5)
+    assert(weaviateOptions.timeout == 60)
+    assert(weaviateOptions.oidcUsername == "")
+    assert(weaviateOptions.oidcPassword == "")
+    assert(weaviateOptions.oidcClientSecret == "")
+    assert(weaviateOptions.oidcAccessToken == "accessToken")
+    assert(weaviateOptions.oidcAccessTokenLifetime == 100)
+    assert(weaviateOptions.oidcRefreshToken == "refreshToken")
+  }
+
   test("Test that getConnection returns the same WeaviateClient object") {
     val options: CaseInsensitiveStringMap =
       new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost:8080", "className" -> "pinball", "batchSize" -> "19").asJava)
