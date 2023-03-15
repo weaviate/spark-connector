@@ -1,7 +1,7 @@
 package io.weaviate.spark
 
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
-import technology.semi.weaviate.client.v1.schema.model.{Property, WeaviateClass}
+import io.weaviate.client.v1.schema.model.{Property, WeaviateClass}
 
 import scala.jdk.CollectionConverters._
 import scala.sys.process._

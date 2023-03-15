@@ -1,11 +1,10 @@
 package io.weaviate.spark
 
-import java.io.File
 import org.apache.spark.sql.execution.streaming.MemoryStream
 import org.apache.spark.sql.{AnalysisException, DataFrame, Encoder, Encoders}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
-import technology.semi.weaviate.client.v1.schema.model.{Property, WeaviateClass}
+import io.weaviate.client.v1.schema.model.{Property, WeaviateClass}
 
 import scala.jdk.CollectionConverters._
 import scala.reflect.io.Directory

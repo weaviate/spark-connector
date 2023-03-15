@@ -4,7 +4,7 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
 import org.apache.spark.sql.types._
-import technology.semi.weaviate.client.v1.data.model.WeaviateObject
+import io.weaviate.client.v1.data.model.WeaviateObject
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
