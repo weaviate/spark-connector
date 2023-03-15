@@ -13,14 +13,14 @@ lazy val root = (project in file("."))
 ThisBuild / scalafixDependencies += "org.scalalint" %% "rules" % "0.1.4"
 
 lazy val sparkVersion = "3.3.1"
-lazy val weaviateClientVersion = "3.6.3"
+lazy val weaviateClientVersion = "4.0.0"
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.2.14" % "test",
   "org.apache.spark" %% "spark-core" % sparkVersion % "provided,test",
   "org.apache.spark" %% "spark-sql" % sparkVersion % "provided,test",
   "org.apache.spark" %% "spark-catalyst" % sparkVersion % "provided,test",
   "org.scala-lang.modules" %% "scala-collection-compat" % "2.9.0",
-  "technology.semi.weaviate" % "client" % weaviateClientVersion
+  "io.weaviate" % "client" % weaviateClientVersion
 )
 
 

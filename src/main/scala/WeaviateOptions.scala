@@ -3,7 +3,7 @@ package io.weaviate.spark
 import WeaviateOptions._
 
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
-import technology.semi.weaviate.client.{Config, WeaviateClient, WeaviateAuthClient}
+import io.weaviate.client.{Config, WeaviateClient, WeaviateAuthClient}
 
 class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
   private val DEFAULT_BATCH_SIZE = 100
