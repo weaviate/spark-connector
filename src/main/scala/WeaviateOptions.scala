@@ -35,11 +35,11 @@ class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
     if (client != null) return client
     val config = new Config(scheme, host, null, timeout, timeout, timeout)
 
-    if (!oidcUsername.isBlank() && !oidcPassword.isBlank()) {
+    if (!oidcUsername.trim().isEmpty() && !oidcPassword.trim().isEmpty()) {
       client = WeaviateAuthClient.clientPassword(config, oidcUsername, oidcPassword, null)
-    } else if (!oidcClientSecret.isBlank()) {
+    } else if (!oidcClientSecret.trim().isEmpty()) {
       client = WeaviateAuthClient.clientCredentials(config, oidcClientSecret, null)
-    } else if (!oidcAccessToken.isBlank()) {
+    } else if (!oidcAccessToken.trim().isEmpty()) {
       client = WeaviateAuthClient.bearerToken(config, oidcAccessToken, oidcAccessTokenLifetime, oidcRefreshToken)
     } else {
       client = new WeaviateClient(config)
