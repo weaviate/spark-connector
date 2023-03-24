@@ -7,14 +7,21 @@ on:
 
 jobs:
   scala-integration-tests:
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        distribution: [ 'zulu', 'temurin' ]
+        java: [ '8', '11' ]
+        os: [ 'ubuntu-latest' ]
     steps:
       - uses: actions/checkout@v3
       - name: Setup JDK
         uses: actions/setup-java@v3
         with:
-          distribution: temurin
-          java-version: 11
+          distribution: ${{ matrix.distribution }}
+          java-version: ${{ matrix.java }}
+      - run: rm .sbtopts
+        if: ${{ matrix.java }} == "8"
       - name: Build, Unit Test and Scala Spark Integration tests
         run: sbt -v +test
 
