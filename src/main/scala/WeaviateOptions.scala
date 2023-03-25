@@ -4,6 +4,7 @@ import WeaviateOptions._
 
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import io.weaviate.client.{Config, WeaviateClient, WeaviateAuthClient}
+import scala.collection.JavaConverters._
 
 class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
   private val DEFAULT_BATCH_SIZE = 100
@@ -29,11 +30,18 @@ class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
   val oidcAccessTokenLifetime: Long = config.getLong(WEAVIATE_OIDC_ACCESS_TOKEN_LIFETIME, 0)
   val oidcRefreshToken: String = config.getOrDefault(WEAVIATE_OIDC_REFRESH_TOKEN, "")
 
+  var headers: Map[String, String] = Map()
+  config.forEach((option, value) => {
+    if (option.startsWith(WEAVIATE_HEADER_PREFIX)) {
+      headers += (option.replace(WEAVIATE_HEADER_PREFIX, "") -> value)
+    }
+  })
+
   var client: WeaviateClient = _
 
   def getClient(): WeaviateClient = {
     if (client != null) return client
-    val config = new Config(scheme, host, null, timeout, timeout, timeout)
+    val config = new Config(scheme, host, headers.asJava, timeout, timeout, timeout)
 
     if (!oidcUsername.trim().isEmpty() && !oidcPassword.trim().isEmpty()) {
       client = WeaviateAuthClient.clientPassword(config, oidcUsername, oidcPassword, null)
@@ -65,4 +73,5 @@ object WeaviateOptions {
   val WEAVIATE_OIDC_ACCESS_TOKEN: String = "oidc:accessToken"
   val WEAVIATE_OIDC_ACCESS_TOKEN_LIFETIME: String = "oidc:accessTokenLifetime"
   val WEAVIATE_OIDC_REFRESH_TOKEN: String = "oidc:refreshToken"
+  val WEAVIATE_HEADER_PREFIX: String = "header:"
 }
