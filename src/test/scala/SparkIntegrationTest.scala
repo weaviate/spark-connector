@@ -16,9 +16,14 @@ class SparkIntegrationTest
     with BeforeAndAfter {
 
   val client = WeaviateDocker.client
+  var defaultModule = "none"
 
   before {
-    val exit_code = WeaviateDocker.start()
+    val testName = testNames.headOption.getOrElse("<unknown test>")
+    if (testName.toLowerCase.contains("openai")) {
+      defaultModule = "text2vec-openai"
+    }
+    val exit_code = WeaviateDocker.start(vectorizerModule = defaultModule)
     assert(exit_code == 0)
   }
 
@@ -136,7 +141,7 @@ class SparkIntegrationTest
 
     val articles = List.fill(20)(ArticleWithAll("Sam", "Sam and Sam", 3, null, "not-used", true))
 
-   val path = java.nio.file.Files.createTempDirectory("weaviate-spark-connector-streaming-test")
+    val path = java.nio.file.Files.createTempDirectory("weaviate-spark-connector-streaming-test")
     val streamingWrite = inputStreamDF.writeStream
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
@@ -618,6 +623,30 @@ class SparkIntegrationTest
         .mode("append")
         .save()
     }
+  }
+
+  test("Set OpenAI API key with incorrect value") {
+    defaultModule = "text2vec-openai"
+    WeaviateDocker.createClass()
+    import spark.implicits._
+    val articles = Seq(Article("Sam", "Big Dog", 3)).toDF
+    articles.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("header:X-OpenAI-API-Key", "incorrect")
+      .option("className", "Article")
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("Article")
+      .run()
+    if (results.hasErrors) {
+      println("Error getting Articles" + results.getError.getMessages)
+    }
+
+    assert(results.getResult.size == 0)
   }
 }
 
