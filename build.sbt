@@ -70,6 +70,8 @@ ThisBuild / assemblyMergeStrategy  := {
     oldStrategy(x)
 }
 
+Test / parallelExecution := false
+
 // Remove all additional repository other than Maven Central from POM
 pomIncludeRepository := { _ => false }
 publishMavenStyle := true
