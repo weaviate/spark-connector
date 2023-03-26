@@ -646,7 +646,8 @@ class SparkIntegrationTest
       println("Error getting Articles" + results.getError.getMessages)
     }
 
-    assert(results.getResult.size == 0)
+    assert(results.getResult.size == 1)
+    assert(results.getResult.get(0).getVector == null)
   }
 }
 
