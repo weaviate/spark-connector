@@ -18,7 +18,7 @@ object WeaviateDocker {
   var retries = 5
 
   def start(vectorizerModule: String = "none", enableModules: String = "text2vec-openai"): Int = {
-    val weaviateVersion = "1.17.1"
+    val weaviateVersion = "1.18.2"
     val docker_run =
       s"""docker run -d --name=weaviate-test-container-will-be-deleted
 -p 8080:8080
