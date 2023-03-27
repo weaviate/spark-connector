@@ -4,7 +4,7 @@ import org.apache.spark.sql.execution.streaming.MemoryStream
 import org.apache.spark.sql.{AnalysisException, DataFrame, Encoder, Encoders}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
-import io.weaviate.client.v1.schema.model.{Property, WeaviateClass}
+import io.weaviate.client.v1.schema.model.Property
 
 import scala.jdk.CollectionConverters._
 import scala.reflect.io.Directory
@@ -25,7 +25,6 @@ class SparkIntegrationTest
   after {
     WeaviateDocker.stop()
   }
-
 
   test("Article with strings and int") {
     WeaviateDocker.createClass()
@@ -136,7 +135,7 @@ class SparkIntegrationTest
 
     val articles = List.fill(20)(ArticleWithAll("Sam", "Sam and Sam", 3, null, "not-used", true))
 
-   val path = java.nio.file.Files.createTempDirectory("weaviate-spark-connector-streaming-test")
+    val path = java.nio.file.Files.createTempDirectory("weaviate-spark-connector-streaming-test")
     val streamingWrite = inputStreamDF.writeStream
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
@@ -621,3 +620,43 @@ class SparkIntegrationTest
   }
 }
 
+class SparkIntegrationTestsOpenAI
+  extends AnyFunSuite
+    with SparkSessionTestWrapper
+    with BeforeAndAfter {
+
+  val client = WeaviateDocker.client
+
+  before {
+    val exit_code = WeaviateDocker.start(vectorizerModule = "text2vec-openai")
+    assert(exit_code == 0)
+  }
+
+  after {
+    WeaviateDocker.stop()
+  }
+
+  test("Set OpenAI API key with incorrect value") {
+    WeaviateDocker.createClass()
+
+    import spark.implicits._
+    val articles = Seq(Article("Sam", "Big Dog", 3)).toDF
+    articles.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("header:X-OpenAI-Api-Key", "shouldntwork")
+      .option("className", "Article")
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("Article")
+      .run()
+    if (results.hasErrors) {
+      println("Error getting Articles" + results.getError.getMessages)
+    }
+
+    assert(results.getResult.size == 0)
+  }
+}

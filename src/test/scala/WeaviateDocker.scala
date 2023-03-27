@@ -15,16 +15,17 @@ object WeaviateDocker {
     (o: String) => println("out " + o),
     (e: String) => println("err " + e))
 
-  var retries = 5
+  var retries = 10
 
-  def start(): Int = {
-    val weaviateVersion = "1.17.1"
+  def start(vectorizerModule: String = "none", enableModules: String = "text2vec-openai"): Int = {
+    val weaviateVersion = "1.18.2"
     val docker_run =
       s"""docker run -d --name=weaviate-test-container-will-be-deleted
 -p 8080:8080
 -e QUERY_DEFAULTS_LIMIT=25
 -e AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
--e DEFAULT_VECTORIZER_MODULE=none
+-e DEFAULT_VECTORIZER_MODULE=$vectorizerModule
+-e ENABLE_MODULES=$enableModules
 -e CLUSTER_HOSTNAME=node1
 -e PERSISTENCE_DATA_PATH=./data
 semitechnologies/weaviate:$weaviateVersion"""
@@ -62,13 +63,13 @@ semitechnologies/weaviate:$weaviateVersion"""
       println("insert error" + results.getError.getMessages)
       if (retries > 1) {
         retries -= 1
-        println("Retrying to create class in 1 seconds..")
-        Thread.sleep(1000)
+        println("Retrying to create class in 0.1 seconds..")
+        Thread.sleep(100)
         createClass(additionalProperties: _*)
       }
     }
     println("Results: " + results.getResult)
-    retries = 5
+    retries = 10
   }
 
   def deleteClass(): Unit = {

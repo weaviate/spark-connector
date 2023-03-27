@@ -152,6 +152,32 @@ class TestWeaviateOptions extends AnyFunSuite {
     assert(weaviateOptions.oidcRefreshToken == "refreshToken")
   }
 
+  test("Test that headers are added correctly") {
+    val options: CaseInsensitiveStringMap =
+      new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost",
+        "className" -> "pinball", "batchSize" -> "19", "retries" -> "5", "retriesBackoff" -> "5",
+        "oidc:accessToken" -> "accessToken", "oidc:accessTokenLifetime" -> "100", "oidc:refreshToken" -> "refreshToken",
+        "header:X-OpenAI-Api-Key" -> "OPENAI_KEY", "header:X-Cohere-Api-Key" -> "COHERE_KEY").asJava)
+    val weaviateOptions: WeaviateOptions = new WeaviateOptions(options)
+
+    assert(weaviateOptions.scheme == "http")
+    assert(weaviateOptions.host == "localhost")
+    assert(weaviateOptions.className == "pinball")
+    assert(weaviateOptions.batchSize == 19)
+    assert(weaviateOptions.retries == 5)
+    assert(weaviateOptions.retriesBackoff == 5)
+    assert(weaviateOptions.timeout == 60)
+    assert(weaviateOptions.oidcUsername == "")
+    assert(weaviateOptions.oidcPassword == "")
+    assert(weaviateOptions.oidcClientSecret == "")
+    assert(weaviateOptions.oidcAccessToken == "accessToken")
+    assert(weaviateOptions.oidcAccessTokenLifetime == 100)
+    assert(weaviateOptions.oidcRefreshToken == "refreshToken")
+    assert(weaviateOptions.headers.size == 2)
+    assert(weaviateOptions.headers.asJava.get("x-openai-api-key") == "OPENAI_KEY")
+    assert(weaviateOptions.headers.asJava.get("x-cohere-api-key") == "COHERE_KEY")
+  }
+
   test("Test that getConnection returns the same WeaviateClient object") {
     val options: CaseInsensitiveStringMap =
       new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost:8080", "className" -> "pinball", "batchSize" -> "19").asJava)
