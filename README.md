@@ -96,7 +96,7 @@ If you already have vectors available in your dataframe you can easily supply th
 Currently only the append write mode is supported. We do not yet support upsert or 
 error if exists write semantics.
 
-Currently only batch operations are supported. We do not yet support streaming writes.
+Both batch operations and streaming writes are supported.
 
 ### Spark to Weaviate DataType mappings
 The connector is able to automatically infer the correct Spark DataType based
