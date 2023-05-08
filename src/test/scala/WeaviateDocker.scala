@@ -18,7 +18,7 @@ object WeaviateDocker {
   var retries = 10
 
   def start(vectorizerModule: String = "none", enableModules: String = "text2vec-openai"): Int = {
-    val weaviateVersion = "1.18.2"
+    val weaviateVersion = "1.19.0"
     val docker_run =
       s"""docker run -d --name=weaviate-test-container-will-be-deleted
 -p 8080:8080
@@ -41,11 +41,11 @@ semitechnologies/weaviate:$weaviateVersion"""
   def createClass(additionalProperties: Property*): Unit = {
     val properties = Seq(
       Property.builder()
-        .dataType(List[String]("string").asJava)
+        .dataType(List[String]("text").asJava)
         .name("title")
         .build(),
       Property.builder()
-        .dataType(List[String]("string").asJava)
+        .dataType(List[String]("text").asJava)
         .name("content")
         .build(),
       Property.builder()

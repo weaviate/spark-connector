@@ -31,7 +31,7 @@ def get_connector_version():
 
 connector_version = os.environ.get("CONNECTOR_VERSION", get_connector_version())
 scala_version = os.environ.get("SCALA_VERSION", "2.12")
-weaviate_version = os.environ.get("WEAVIATE_VERSION", "1.17.2")
+weaviate_version = os.environ.get("WEAVIATE_VERSION", "1.19.0")
 spark_connector_jar_path = os.environ.get(
     "CONNECTOR_JAR_PATH", f"target/scala-{scala_version}/spark-connector-assembly-{connector_version}.jar"
 )
@@ -44,7 +44,7 @@ def spark():
         .appName("Weaviate Pyspark Tests")
         .master('local')
         .config("spark.jars", spark_connector_jar_path)
-        .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.1")
+        .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.0")
         .config("spark.driver.host", "127.0.0.1")
         .getOrCreate()
     )
