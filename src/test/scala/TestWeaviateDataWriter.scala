@@ -123,6 +123,8 @@ class TestWeaviateDataWriter extends AnyFunSuite {
     val row = new GenericInternalRow(Array[Any](UTF8String.fromString(uuid), sam, sam, 5))
     val weaviateObject = dw.buildWeaviateObject(row)
     dw.batch(uuid) = weaviateObject
-    dw.writeBatch(retries = 0)
+    assertThrows[WeaviateResultError] {
+      dw.writeBatch(retries = 0)
+    }
   }
 }

@@ -28,9 +28,13 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     val results = client.batch().objectsBatcher().withObjects(batch.values.toList: _*).run()
     val IDs = batch.keys.toList
 
-    if (results.hasErrors) {
-      logError(s"batch error: ${results.getError.getMessages}")
+    if (results.hasErrors || results.getResult == null) {
+      if (retries == 0) {
+        throw WeaviateResultError(s"error getting result and no more retries left." +
+          s" Error from Weaviate: ${results.getError.getMessages}")
+      }
       if (retries > 0) {
+        logError(s"batch error: ${results.getError.getMessages}, will retry")
         logInfo(s"Retrying batch in ${weaviateOptions.retriesBackoff} seconds. Batch has following IDs: ${IDs}")
         Thread.sleep(weaviateOptions.retriesBackoff * 1000)
         writeBatch(retries - 1)
@@ -86,7 +90,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       case DoubleType => if (record.isNullAt(index)) Double.box(0.0) else Double.box(record.getDouble(index))
       case ArrayType(FloatType, true) => throw new SparkDataTypeNotSupported(
         "Array of FloatType is not supported. Convert to Spark Array of DoubleType instead")
-      case ArrayType(DoubleType, true) |  ArrayType(DoubleType, false) =>
+      case ArrayType(DoubleType, true) | ArrayType(DoubleType, false) =>
         if (record.isNullAt(index)) Array[Double]() else record.getArray(index).toDoubleArray()
       case ArrayType(IntegerType, true) | ArrayType(IntegerType, false) =>
         if (record.isNullAt(index)) Array[Int]() else record.getArray(index).toIntArray()
