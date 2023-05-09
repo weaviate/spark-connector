@@ -106,5 +106,23 @@ class TestWeaviateDataWriter extends AnyFunSuite {
     }
   }
 
-
+  test("Test write batch and with unresponsive Weaviate server") {
+    val options: CaseInsensitiveStringMap =
+      new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost", "className" -> "Article").asJava)
+    val weaviateOptions: WeaviateOptions = new WeaviateOptions(options)
+    val structFields = Array[StructField](
+      StructField("id", DataTypes.StringType, true, Metadata.empty),
+      StructField("title", DataTypes.StringType, true, Metadata.empty),
+      StructField("content", DataTypes.StringType, true, Metadata.empty),
+      StructField("wordCount", DataTypes.IntegerType, true, Metadata.empty)
+    )
+    val schema = StructType(structFields)
+    val dw = WeaviateDataWriter(weaviateOptions, schema)
+    val sam = UTF8String.fromString("Sam")
+    val uuid = java.util.UUID.randomUUID.toString
+    val row = new GenericInternalRow(Array[Any](UTF8String.fromString(uuid), sam, sam, 5))
+    val weaviateObject = dw.buildWeaviateObject(row)
+    dw.batch(uuid) = weaviateObject
+    dw.writeBatch(retries = 0)
+  }
 }
