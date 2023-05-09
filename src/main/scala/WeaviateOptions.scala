@@ -29,6 +29,7 @@ class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
   val oidcAccessToken: String = config.getOrDefault(WEAVIATE_OIDC_ACCESS_TOKEN, "")
   val oidcAccessTokenLifetime: Long = config.getLong(WEAVIATE_OIDC_ACCESS_TOKEN_LIFETIME, 0)
   val oidcRefreshToken: String = config.getOrDefault(WEAVIATE_OIDC_REFRESH_TOKEN, "")
+  val apiKey: String = config.getOrDefault(WEAVIATE_API_KEY, "")
 
   var headers: Map[String, String] = Map()
   config.forEach((option, value) => {
@@ -49,6 +50,8 @@ class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
       client = WeaviateAuthClient.clientCredentials(config, oidcClientSecret, null)
     } else if (!oidcAccessToken.trim().isEmpty()) {
       client = WeaviateAuthClient.bearerToken(config, oidcAccessToken, oidcAccessTokenLifetime, oidcRefreshToken)
+    } else if (!apiKey.trim().isEmpty()) {
+      client = WeaviateAuthClient.apiKey(config, apiKey)
     } else {
       client = new WeaviateClient(config)
     }
@@ -73,5 +76,6 @@ object WeaviateOptions {
   val WEAVIATE_OIDC_ACCESS_TOKEN: String = "oidc:accessToken"
   val WEAVIATE_OIDC_ACCESS_TOKEN_LIFETIME: String = "oidc:accessTokenLifetime"
   val WEAVIATE_OIDC_REFRESH_TOKEN: String = "oidc:refreshToken"
+  val WEAVIATE_API_KEY: String = "apiKey"
   val WEAVIATE_HEADER_PREFIX: String = "header:"
 }
