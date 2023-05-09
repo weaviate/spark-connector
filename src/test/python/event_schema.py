@@ -6,32 +6,32 @@ event_schema = {
     "description": "A page on the internet",
     "properties": [
         #                {
-        #                    "dataType": ["string"],
+        #                    "dataType": ["text"],
         #                    "description": "Domain of the page",
         #                    "name": "domain",
         #                },
         #                {
-        #                    "dataType": ["string"],
+        #                    "dataType": ["text"],
         #                    "description": "URL of the page",
         #                    "name": "og_url",
         #                },
         #                {
-        #                    "dataType": ["string"],
+        #                    "dataType": ["text"],
         #                    "description": "Title of the page",
         #                    "name": "title"
         #                },
         {
-            "dataType": ["string"],
+            "dataType": ["text"],
             "description": "MONEY",
             "name": "moneyline"
         },
         #                {
-        #                    "dataType": ["string"],
+        #                    "dataType": ["text"],
         #                    "description": "time left",
         #                    "name": "game_clock"
         #                },
         {
-            "dataType": ["string"],
+            "dataType": ["text"],
             "description": "current period",
             "name": "current_period",
         },
@@ -41,22 +41,22 @@ event_schema = {
             "name": "is_live",
         },
         # {
-        #                    "dataType": ["string"],
+        #                    "dataType": ["text"],
         #                    "description": "over_under",
         #                    "name": "over_under"
         #                },
         {
-            "dataType": ["string[]"],
+            "dataType": ["text[]"],
             "description": "lotta plays",
             "name": "plays"
         },
         {
-            "dataType": ["string[]"],
+            "dataType": ["text[]"],
             "description": "lotta scores",
             "name": "scores"
         },
         {
-            "dataType": ["string[]"],
+            "dataType": ["text[]"],
             "description": "lotta teams",
             "name": "teams"
         }

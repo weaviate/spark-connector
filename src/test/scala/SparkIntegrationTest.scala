@@ -120,7 +120,7 @@ class SparkIntegrationTest
         .name("keywords")
         .build(),
       Property.builder()
-        .dataType(List[String]("string").asJava)
+        .dataType(List[String]("text").asJava)
         .name("customId")
         .build(),
       Property.builder()

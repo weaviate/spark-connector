@@ -19,47 +19,47 @@ movie_schema = {
         },
         {
             "name": "url",
-            "dataType": ["string"],
+            "dataType": ["text"],
             "description": "The IMBD url of the movie",
         },
         {
             "name": "title",
-            "dataType": ["string"],
+            "dataType": ["text"],
             "description": "The name of the movie",
         },
         {
             "name": "poster_link",
-            "dataType": ["string"],
+            "dataType": ["text"],
             "description": "The poster link of the movie",
         },
         {
             "name": "genres",
-            "dataType": ["string"],
+            "dataType": ["text"],
             "description": "The genres of the movie",
         },
         {
             "name": "actors",
-            "dataType": ["string"],
+            "dataType": ["text"],
             "description": "The actors of the movie",
         },
         {
             "name": "director",
-            "dataType": ["string"],
+            "dataType": ["text"],
             "description": "Director of the movie",
         },
         {
             "name": "description",
-            "dataType": ["string"],
+            "dataType": ["text"],
             "description": "overview of the movie",
         },
         {
             "name": "date_published",
-            "dataType": ["string"],
+            "dataType": ["text"],
             "description": "The date on which movie was published",
         },
         {
             "name": "keywords",
-            "dataType": ["string"],
+            "dataType": ["text"],
             "description": "main keywords of the movie",
         },
         {
@@ -69,22 +69,22 @@ movie_schema = {
         },
         {
             "name": "review_aurthor",
-            "dataType": ["string"],
+            "dataType": ["text"],
             "description": "aurthor of the review",
         },
         {
             "name": "review_date",
-            "dataType": ["string"],
+            "dataType": ["text"],
             "description": "date of review",
         },
         {
             "name": "review_body",
-            "dataType": ["string"],
+            "dataType": ["text"],
             "description": "body of the review",
         },
         {
             "name": "duration",
-            "dataType": ["string"],
+            "dataType": ["text"],
             "description": "the duration of the review",
         }
     ]
