@@ -31,7 +31,7 @@ def get_connector_version():
 
 connector_version = os.environ.get("CONNECTOR_VERSION", get_connector_version())
 scala_version = os.environ.get("SCALA_VERSION", "2.12")
-weaviate_version = os.environ.get("WEAVIATE_VERSION", "1.19.0")
+weaviate_version = os.environ.get("WEAVIATE_VERSION", "1.20.1")
 spark_connector_jar_path = os.environ.get(
     "CONNECTOR_JAR_PATH", f"target/scala-{scala_version}/spark-connector-assembly-{connector_version}.jar"
 )
