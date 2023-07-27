@@ -41,9 +41,20 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       }
     }
 
-    val (objectsWithSuccess, objectsWithError) = results.getResult.partition(_.getResult.getErrors == null)
+    val (objectsWithSuccess, objectsWithError) = results.getResult.partition(
+      obj => obj != null && obj.getResult != null && obj.getResult.getErrors == null
+    )
     if (objectsWithError.size > 0 && retries > 0) {
-      val errors = objectsWithError.map(obj => s"${obj.getId}: ${obj.getResult.getErrors.toString}")
+      val errors = objectsWithError.map(obj => {
+        if (obj == null) {
+          "object is empty"
+        } else {
+          Option(obj.getResult) match {
+            case Some(res) => s"${obj.getId}: ${res.getErrors.toString}"
+            case None => s"${obj.getId}: errors are empty"
+          }
+        }
+      })
       val successIDs = objectsWithSuccess.map(_.getId).toList
       logWarning(s"Successfully imported ${successIDs}. " +
         s"Retrying objects with an error. Following objects in the batch upload had an error: ${errors.mkString("Array(", ", ", ")")}")
