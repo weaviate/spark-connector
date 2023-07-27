@@ -1,5 +1,7 @@
 package io.weaviate.spark
 
+import io.weaviate.client.v1.batch.api.ObjectsBatcher.BatchRetriesConfig
+import io.weaviate.client.v1.batch.model.ObjectGetResponse
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
@@ -22,26 +24,25 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     if (batch.size >= weaviateOptions.batchSize) writeBatch()
   }
 
-  def writeBatch(retries: Int = weaviateOptions.retries): Unit = {
-    if (batch.size == 0) return
+  private def performWriteBatch(batch: mutable.Map[String, WeaviateObject]): (Array[ObjectGetResponse], Array[ObjectGetResponse]) = {
     val client = weaviateOptions.getClient()
-    val results = client.batch().objectsBatcher().withObjects(batch.values.toList: _*).run()
-    val IDs = batch.keys.toList
+    val retryConfig = BatchRetriesConfig.builder
+      .maxTimeoutRetries(weaviateOptions.retries)
+      .maxConnectionRetries(weaviateOptions.retries)
+      .retriesIntervalMs(weaviateOptions.retriesBackoff * 1000)
+      .build()
+    val results = client.batch().objectsBatcher(retryConfig).withObjects(batch.values.toList: _*).run()
 
     if (results.hasErrors || results.getResult == null) {
-      if (retries == 0) {
-        throw WeaviateResultError(s"error getting result and no more retries left." +
-          s" Error from Weaviate: ${results.getError.getMessages}")
-      }
-      if (retries > 0) {
-        logError(s"batch error: ${results.getError.getMessages}, will retry")
-        logInfo(s"Retrying batch in ${weaviateOptions.retriesBackoff} seconds. Batch has following IDs: ${IDs}")
-        Thread.sleep(weaviateOptions.retriesBackoff * 1000)
-        writeBatch(retries - 1)
-      }
+      throw WeaviateResultError(s"Performing batch failed, error from Weaviate: ${results.getError.getMessages}")
     }
-
     val (objectsWithSuccess, objectsWithError) = results.getResult.partition(_.getResult.getErrors == null)
+    (objectsWithSuccess, objectsWithError)
+  }
+
+  def writeBatch(retries: Int = weaviateOptions.retries): Unit = {
+    if (batch.size == 0) return
+    val (objectsWithSuccess, objectsWithError) = performWriteBatch(batch)
     if (objectsWithError.size > 0 && retries > 0) {
       val errors = objectsWithError.map(obj => s"${obj.getId}: ${obj.getResult.getErrors.toString}")
       val successIDs = objectsWithSuccess.map(_.getId).toList
@@ -50,6 +51,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       batch = batch -- successIDs
       writeBatch(retries - 1)
     } else {
+      val IDs = batch.keys.toList
       logInfo(s"Writing batch successful. IDs of inserted objects: ${IDs}")
       batch.clear()
     }
