@@ -39,19 +39,19 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
         Thread.sleep(weaviateOptions.retriesBackoff * 1000)
         writeBatch(retries - 1)
       }
-    }
-
-    val (objectsWithSuccess, objectsWithError) = results.getResult.partition(_.getResult.getErrors == null)
-    if (objectsWithError.size > 0 && retries > 0) {
-      val errors = objectsWithError.map(obj => s"${obj.getId}: ${obj.getResult.getErrors.toString}")
-      val successIDs = objectsWithSuccess.map(_.getId).toList
-      logWarning(s"Successfully imported ${successIDs}. " +
-        s"Retrying objects with an error. Following objects in the batch upload had an error: ${errors.mkString("Array(", ", ", ")")}")
-      batch = batch -- successIDs
-      writeBatch(retries - 1)
     } else {
-      logInfo(s"Writing batch successful. IDs of inserted objects: ${IDs}")
-      batch.clear()
+      val (objectsWithSuccess, objectsWithError) = results.getResult.partition(_.getResult.getErrors == null)
+      if (objectsWithError.size > 0 && retries > 0) {
+        val errors = objectsWithError.map(obj => s"${obj.getId}: ${obj.getResult.getErrors.toString}")
+        val successIDs = objectsWithSuccess.map(_.getId).toList
+        logWarning(s"Successfully imported ${successIDs}. " +
+          s"Retrying objects with an error. Following objects in the batch upload had an error: ${errors.mkString("Array(", ", ", ")")}")
+        batch = batch -- successIDs
+        writeBatch(retries - 1)
+      } else {
+        logInfo(s"Writing batch successful. IDs of inserted objects: ${IDs}")
+        batch.clear()
+      }
     }
   }
 
