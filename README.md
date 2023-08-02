@@ -93,7 +93,7 @@ can also supply those in the dataframe.
 )
 ```
 
-For authenticated use such as with [WCS](https://weaviate.io/developers/wcs) the `apiKey` option can be used. Further options including OIDC and custom headers are listed in the [tutorial](https://weaviate.io/developers/weaviate/tutorials/spark-connector#spark-connector-options).
+For authenticated clusters such as with [WCS](https://weaviate.io/developers/wcs) the `apiKey` option can be used. Further options including OIDC and custom headers are listed in the [tutorial](https://weaviate.io/developers/weaviate/tutorials/spark-connector#spark-connector-options).
 
 ```python
 (
