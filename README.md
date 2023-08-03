@@ -1,19 +1,18 @@
 # Weaviate Spark Connector
-For use in Spark ETLs to populate a Weaviate vector database.
+For use in [Spark](https://spark.apache.org/docs/latest/) jobs to populate a Weaviate vector database.
 
-Status: Alpha, data might not always get written to Weaviate so
+Status: [Alpha](https://github.com/weaviate/spark-connector/issues/97), data might not always get written to Weaviate so
 verify your data was actually written to Weaviate.
 
 ## Installation
-You can choose one of the following options to install the Spark Weaviate Connector:
+You can choose one of the following options to install the Weaviate Spark Connector:
 
 ### Download JAR from GitHub
 You can download the latest JAR from [GitHub releases here](https://github.com/weaviate/spark-connector/releases/latest).
 
 ### Building the JAR yourself
 To use in your own Spark job you will first need to build the fat jar of the package by running
-`sbt assembly` which will create the artifact in
-`./target/scala-2.12/spark-connector-assembly-1.2.8.jar
+`sbt assembly` which will create the artifact in `./target/scala-2.12/spark-connector-assembly-1.2.8.jar`
 
 ### Using the JAR in Spark
 You can configure spark-shell or tools like spark-submit to use the JAR like this:
@@ -45,7 +44,10 @@ sbt +assembly
 ```
 
 ## Usage
-With this package loading data from Spark is as easy as this!
+
+First create a schema in Weaviate as the connector will not create one automatically. See the [tutorial](https://weaviate.io/developers/weaviate/tutorials/spark-connector#writing-to-weaviate) for how to do this.
+
+Afterwards loading data from Spark is as easy as this!
 
 ```python
 (
@@ -60,7 +62,7 @@ With this package loading data from Spark is as easy as this!
 )
 ```
 
-If you already have vectors available in your dataframe you can easily supply them with the vector option.
+If you already have vectors available in your dataframe (recommended for batch insert performance) you can easily supply them with the vector option.
 ```python
 (
     my_df
@@ -77,7 +79,6 @@ If you already have vectors available in your dataframe you can easily supply th
 
 By default the Weaviate client will create document IDs for you for new documents but if you already have IDs you
 can also supply those in the dataframe.
-If you already have vectors available in your dataframe you can easily supply them with the vector option.
 ```python
 (
     my_df
@@ -86,6 +87,25 @@ If you already have vectors available in your dataframe you can easily supply th
     .option("scheme", "http")
     .option("host", weaviate_host)
     .option("className", "MyClass")
+    .option("id", id_column_name)
+    .mode("append")
+    .save()
+)
+```
+
+For authenticated clusters such as with [WCS](https://weaviate.io/developers/wcs) the `apiKey` option can be used. Further options including OIDC and custom headers are listed in the [tutorial](https://weaviate.io/developers/weaviate/tutorials/spark-connector#spark-connector-options).
+
+```python
+(
+    my_df
+    .write
+    .format("io.weaviate.spark.Weaviate")
+    .option("scheme", "https")
+    .option("host", "demo-endpoint.weaviate.network")
+    .option("apiKey", WEAVIATE_API_KEY)
+    .option("className", "MyClass")
+    .option("batchSize", 100)
+    .option("vector", vector_column_name)
     .option("id", id_column_name)
     .mode("append")
     .save()
