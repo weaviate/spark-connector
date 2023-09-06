@@ -10,6 +10,27 @@ import org.scalatest.funsuite.AnyFunSuite
 import scala.jdk.CollectionConverters._
 
 class TestWeaviateDataWriter extends AnyFunSuite {
+  test("Test Build Weaviate Object with Tenant") {
+    val options: CaseInsensitiveStringMap =
+      new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost", "className" -> "Article", "tenant" -> "TenantA").asJava)
+    val weaviateOptions: WeaviateOptions = new WeaviateOptions(options)
+    val structFields = Array[StructField](
+      StructField("title", DataTypes.StringType, true, Metadata.empty),
+      StructField("content", DataTypes.StringType, true, Metadata.empty),
+      StructField("wordCount", DataTypes.IntegerType, true, Metadata.empty)
+    )
+    val schema = StructType(structFields)
+    val dw = WeaviateDataWriter(weaviateOptions, schema)
+    val sam = UTF8String.fromString("Sam")
+    val row = new GenericInternalRow(Array[Any](sam, sam, 5))
+    val weaviateObject = dw.buildWeaviateObject(row)
+
+    assert(weaviateObject.getProperties.get("title") == "Sam")
+    assert(weaviateObject.getProperties.get("content") == "Sam")
+    assert(weaviateObject.getProperties.get("wordCount") == 5)
+    assert(weaviateObject.getTenant == "TenantA")
+  }
+
   test("Test Build Weaviate Object without supplied ID") {
     val options: CaseInsensitiveStringMap =
       new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost", "className" -> "Article").asJava)
@@ -29,6 +50,7 @@ class TestWeaviateDataWriter extends AnyFunSuite {
     assert(weaviateObject.getProperties.get("content") == "Sam")
     assert(weaviateObject.getProperties.get("wordCount") == 5)
     assert(weaviateObject.getId != null)
+    assert(weaviateObject.getTenant == null)
   }
 
   test("Test Build Weaviate Object with supplied ID") {
@@ -54,6 +76,7 @@ class TestWeaviateDataWriter extends AnyFunSuite {
     assert(weaviateObject.getProperties.get("content") == "Sam")
     assert(weaviateObject.getProperties.get("wordCount") == 5)
     assert(weaviateObject.getId == uuid)
+    assert(weaviateObject.getTenant == null)
   }
 
   test("Test Build Weaviate Object with DateString") {
@@ -78,6 +101,7 @@ class TestWeaviateDataWriter extends AnyFunSuite {
     assert(weaviateObject.getProperties.get("content") == "Sam")
     assert(weaviateObject.getProperties.get("wordCount") == 5)
     assert(weaviateObject.getProperties.get("date") == "2022-11-18T00:00:00Z")
+    assert(weaviateObject.getTenant == null)
   }
 
   test("Test Build Weaviate Object with Unsupported Data types") {
