@@ -6,6 +6,20 @@ import org.scalatest.funsuite.AnyFunSuite
 import scala.jdk.CollectionConverters._
 
 class TestWeaviateOptions extends AnyFunSuite {
+  test("Test fields are set correctly with a Tenant") {
+    val options: CaseInsensitiveStringMap =
+      new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost", "className" -> "pinball", "tenant" -> "TenantA").asJava)
+    val weaviateOptions: WeaviateOptions = new WeaviateOptions(options)
+
+    assert(weaviateOptions.scheme == "http")
+    assert(weaviateOptions.host == "localhost")
+    assert(weaviateOptions.className == "pinball")
+    assert(weaviateOptions.tenant.contains("TenantA"))
+    assert(weaviateOptions.batchSize == 100)
+    assert(weaviateOptions.retries == 2)
+    assert(weaviateOptions.retriesBackoff == 2)
+  }
+
   test("Test fields are set correctly, batchSize and retries is defaulted") {
     val options: CaseInsensitiveStringMap =
       new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost", "className" -> "pinball").asJava)
@@ -14,6 +28,7 @@ class TestWeaviateOptions extends AnyFunSuite {
     assert(weaviateOptions.scheme == "http")
     assert(weaviateOptions.host == "localhost")
     assert(weaviateOptions.className == "pinball")
+    assert(weaviateOptions.tenant.isEmpty)
     assert(weaviateOptions.batchSize == 100)
     assert(weaviateOptions.retries == 2)
     assert(weaviateOptions.retriesBackoff == 2)
@@ -28,6 +43,7 @@ class TestWeaviateOptions extends AnyFunSuite {
     assert(weaviateOptions.scheme == "http")
     assert(weaviateOptions.host == "localhost")
     assert(weaviateOptions.className == "pinball")
+    assert(weaviateOptions.tenant.isEmpty)
     assert(weaviateOptions.batchSize == 19)
     assert(weaviateOptions.retries == 5)
     assert(weaviateOptions.retriesBackoff == 5)
@@ -43,6 +59,7 @@ class TestWeaviateOptions extends AnyFunSuite {
     assert(weaviateOptions.scheme == "http")
     assert(weaviateOptions.host == "localhost")
     assert(weaviateOptions.className == "pinball")
+    assert(weaviateOptions.tenant.isEmpty)
     assert(weaviateOptions.batchSize == 19)
     assert(weaviateOptions.retries == 5)
     assert(weaviateOptions.retriesBackoff == 5)
@@ -58,6 +75,7 @@ class TestWeaviateOptions extends AnyFunSuite {
     assert(weaviateOptions.scheme == "http")
     assert(weaviateOptions.host == "localhost")
     assert(weaviateOptions.className == "pinball")
+    assert(weaviateOptions.tenant.isEmpty)
     assert(weaviateOptions.batchSize == 19)
     assert(weaviateOptions.retries == 5)
     assert(weaviateOptions.retriesBackoff == 5)
@@ -74,6 +92,7 @@ class TestWeaviateOptions extends AnyFunSuite {
     assert(weaviateOptions.scheme == "http")
     assert(weaviateOptions.host == "localhost")
     assert(weaviateOptions.className == "pinball")
+    assert(weaviateOptions.tenant.isEmpty)
     assert(weaviateOptions.batchSize == 19)
     assert(weaviateOptions.retries == 5)
     assert(weaviateOptions.retriesBackoff == 5)
@@ -96,6 +115,7 @@ class TestWeaviateOptions extends AnyFunSuite {
     assert(weaviateOptions.scheme == "http")
     assert(weaviateOptions.host == "localhost")
     assert(weaviateOptions.className == "pinball")
+    assert(weaviateOptions.tenant.isEmpty)
     assert(weaviateOptions.batchSize == 19)
     assert(weaviateOptions.retries == 5)
     assert(weaviateOptions.retriesBackoff == 5)
@@ -118,6 +138,7 @@ class TestWeaviateOptions extends AnyFunSuite {
     assert(weaviateOptions.scheme == "http")
     assert(weaviateOptions.host == "localhost")
     assert(weaviateOptions.className == "pinball")
+    assert(weaviateOptions.tenant.isEmpty)
     assert(weaviateOptions.batchSize == 19)
     assert(weaviateOptions.retries == 5)
     assert(weaviateOptions.retriesBackoff == 5)
@@ -140,6 +161,7 @@ class TestWeaviateOptions extends AnyFunSuite {
     assert(weaviateOptions.scheme == "http")
     assert(weaviateOptions.host == "localhost")
     assert(weaviateOptions.className == "pinball")
+    assert(weaviateOptions.tenant.isEmpty)
     assert(weaviateOptions.batchSize == 19)
     assert(weaviateOptions.retries == 5)
     assert(weaviateOptions.retriesBackoff == 5)
@@ -162,6 +184,7 @@ class TestWeaviateOptions extends AnyFunSuite {
     assert(weaviateOptions.scheme == "http")
     assert(weaviateOptions.host == "localhost")
     assert(weaviateOptions.className == "pinball")
+    assert(weaviateOptions.tenant.isEmpty)
     assert(weaviateOptions.batchSize == 19)
     assert(weaviateOptions.retries == 5)
     assert(weaviateOptions.retriesBackoff == 5)
@@ -180,6 +203,7 @@ class TestWeaviateOptions extends AnyFunSuite {
     assert(weaviateOptions.scheme == "http")
     assert(weaviateOptions.host == "localhost")
     assert(weaviateOptions.className == "pinball")
+    assert(weaviateOptions.tenant.isEmpty)
     assert(weaviateOptions.batchSize == 19)
     assert(weaviateOptions.retries == 5)
     assert(weaviateOptions.retriesBackoff == 5)

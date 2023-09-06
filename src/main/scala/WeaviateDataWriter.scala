@@ -57,6 +57,10 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
 
   private[spark] def buildWeaviateObject(record: InternalRow): WeaviateObject = {
     var builder = WeaviateObject.builder.className(weaviateOptions.className)
+    weaviateOptions.tenant match {
+      case Some(tenant) => builder = builder.tenant(tenant)
+      case _ =>
+    }
     val properties = mutable.Map[String, AnyRef]()
     schema.zipWithIndex.foreach(field =>
       field._1.name match {
