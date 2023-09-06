@@ -18,10 +18,7 @@ class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
   val host: String = config.get(WEAVIATE_HOST_CONF)
   val scheme: String = config.get(WEAVIATE_SCHEME_CONF)
   val className: String = config.get(WEAVIATE_CLASSNAME_CONF)
-  val tenant: Option[String] = config.getOrDefault(WEAVIATE_TENANT_CONF, "").trim match {
-    case tenant if tenant.isEmpty => None
-    case tenant => Some(tenant)
-  }
+  val tenant: String = config.getOrDefault(WEAVIATE_TENANT_CONF, null)
   val vector: String = config.get(WEAVIATE_VECTOR_COLUMN_CONF)
   val id: String = config.get(WEAVIATE_ID_COLUMN_CONF)
   val retries: Int = config.getInt(WEAVIATE_RETRIES_CONF, DEFAULT_RETRIES)
