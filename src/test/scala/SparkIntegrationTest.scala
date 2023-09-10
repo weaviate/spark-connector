@@ -618,6 +618,56 @@ class SparkIntegrationTest
         .save()
     }
   }
+
+  test("Article with all datatypes using gRPC") {
+    import spark.implicits._
+    case class TestCase(name: String, weaviateDataType: String, df: DataFrame, expected: Any)
+    val cases = Seq(
+      TestCase("byteTestCase", "int",
+        Seq(ArticleWithByte("Sam", "Sam and Sam", 3, 1.toByte)).toDF, 1.0),
+      TestCase("shortTestCase", "int",
+        Seq(ArticleWithShort("Sam", "Sam and Sam", 3, 1.toShort)).toDF, 1.0),
+      TestCase("longTestCase", "int",
+        Seq(ArticleWithLong("Sam", "Sam and Sam", 3, 1.toLong)).toDF, 1.0),
+      TestCase("floatTestCase", "number",
+        Seq(ArticleWithFloat("Sam", "Sam and Sam", 3, 0.01f)).toDF, 0.01f),
+      TestCase("doubleTestCase", "number",
+        Seq(ArticleWithDouble("Sam", "Sam and Sam", 3, 0.01)).toDF, 0.01),
+      TestCase("boolTestCase", "boolean",
+        Seq(ArticleWithBoolean("Sam", "Sam and Sam", 3, true)).toDF, true),
+    )
+
+    for (c <- cases) {
+      println(s"Running test case: ${c.name}")
+      WeaviateDocker.createClass(
+        Property.builder()
+          .dataType(List[String](c.weaviateDataType).asJava)
+          .name(c.name)
+          .build()
+      )
+
+      c.df.write
+        .format("io.weaviate.spark.Weaviate")
+        .option("scheme", "http")
+        .option("host", "localhost:8080")
+        .option("grpc:host", "localhost:50051")
+        .option("className", "Article")
+        .mode("append")
+        .save()
+      val results = client.data().objectsGetter()
+        .withClassName("Article")
+        .run()
+
+      if (results.hasErrors) {
+        println("Error getting Articles" + results.getError.getMessages)
+      }
+
+      assert(results.getResult.size == 1)
+      val props = results.getResult.get(0).getProperties
+      assert(props.get(c.name) == c.expected)
+      WeaviateDocker.deleteClass()
+    }
+  }
 }
 
 class SparkIntegrationTestsOpenAI

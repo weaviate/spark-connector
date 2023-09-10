@@ -1,5 +1,7 @@
 import ReleaseTransformations._
 
+resolvers += Resolver.mavenLocal
+
 ThisBuild / scalaVersion := "2.12.17"
 
 crossScalaVersions := Seq("2.12.17", "2.13.10")
@@ -13,16 +15,21 @@ lazy val root = (project in file("."))
 ThisBuild / scalafixDependencies += "org.scalalint" %% "rules" % "0.1.4"
 
 lazy val sparkVersion = "3.5.0"
-lazy val weaviateClientVersion = "4.3.0"
+lazy val weaviateClientVersion = "4.4.1"
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.2.17" % "test",
   "org.apache.spark" %% "spark-core" % sparkVersion % "provided,test",
   "org.apache.spark" %% "spark-sql" % sparkVersion % "provided,test",
   "org.apache.spark" %% "spark-catalyst" % sparkVersion % "provided,test",
   "org.scala-lang.modules" %% "scala-collection-compat" % "2.11.0",
-  "io.weaviate" % "client" % weaviateClientVersion
+  "io.weaviate" % "client" % weaviateClientVersion,
+  "io.grpc" % "grpc-netty-shaded" % "1.58.0"
 )
 
+assemblyShadeRules in assembly := Seq(
+  ShadeRule.rename("com.google.protobuf.**" -> "shade_proto.@1").inAll,
+  ShadeRule.rename("com.google.common.**" -> "shade_googlecommon.@1").inAll
+)
 
 ThisBuild / organization := "io.weaviate"
 ThisBuild / organizationName := "Weaviate B.V."
