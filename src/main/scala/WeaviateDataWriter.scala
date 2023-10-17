@@ -24,8 +24,17 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
 
   def writeBatch(retries: Int = weaviateOptions.retries): Unit = {
     if (batch.size == 0) return
+
+    val consistencyLevel = weaviateOptions.consistencyLevel
     val client = weaviateOptions.getClient()
-    val results = client.batch().objectsBatcher().withObjects(batch.values.toList: _*).run()
+
+    val results = if (consistencyLevel != "") {
+      logInfo(s"Writing using consistency level: ${consistencyLevel}")
+      client.batch().objectsBatcher().withObjects(batch.values.toList: _*).withConsistencyLevel(consistencyLevel).run()
+    } else {
+      client.batch().objectsBatcher().withObjects(batch.values.toList: _*).run()
+    }
+
     val IDs = batch.keys.toList
 
     if (results.hasErrors || results.getResult == null) {
