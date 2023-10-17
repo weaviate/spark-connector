@@ -5,6 +5,7 @@ import WeaviateOptions._
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import io.weaviate.client.{Config, WeaviateClient, WeaviateAuthClient}
 import scala.collection.JavaConverters._
+import io.weaviate.client.v1.data.replication.model.ConsistencyLevel
 
 class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
   private val DEFAULT_BATCH_SIZE = 100
@@ -31,6 +32,7 @@ class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
   val oidcAccessTokenLifetime: Long = config.getLong(WEAVIATE_OIDC_ACCESS_TOKEN_LIFETIME, 0)
   val oidcRefreshToken: String = config.getOrDefault(WEAVIATE_OIDC_REFRESH_TOKEN, "")
   val apiKey: String = config.getOrDefault(WEAVIATE_API_KEY, "")
+  val consistencyLevel: String = config.getOrDefault(WEAVIATE_CONSISTENCY_LEVEL, "")
 
   var headers: Map[String, String] = Map()
   config.forEach((option, value) => {
@@ -80,4 +82,5 @@ object WeaviateOptions {
   val WEAVIATE_OIDC_REFRESH_TOKEN: String = "oidc:refreshToken"
   val WEAVIATE_API_KEY: String = "apiKey"
   val WEAVIATE_HEADER_PREFIX: String = "header:"
+  val WEAVIATE_CONSISTENCY_LEVEL: String = "consistencyLevel"
 }
