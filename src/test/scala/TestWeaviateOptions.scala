@@ -232,5 +232,22 @@ class TestWeaviateOptions extends AnyFunSuite {
     assert(client != client3)
     assert(client2 != client3)
   }
+
+  test("Test valid consistency level") {
+    val options: CaseInsensitiveStringMap =
+      new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost:8080", "className" -> "pinball", "consistencyLevel" -> "ALL").asJava)
+
+    val weaviateOptions: WeaviateOptions = new WeaviateOptions(options)
+    assert(weaviateOptions.consistencyLevel == "ALL")
+  }
+
+  test("Test invalid consistency level") {
+    val options: CaseInsensitiveStringMap =
+      new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost:8080", "className" -> "pinball", "consistencyLevel" -> "EVENTUAL").asJava)
+
+    assertThrows[WeaviateOptionsError] {
+      new WeaviateOptions(options)
+    }
+  }
 }
 
