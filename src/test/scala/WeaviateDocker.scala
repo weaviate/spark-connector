@@ -1,7 +1,8 @@
 package io.weaviate.spark
 
+import io.weaviate.client.v1.schema.model.Property.NestedProperty
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
-import io.weaviate.client.v1.schema.model.{Property, WeaviateClass}
+import io.weaviate.client.v1.schema.model.{DataType, Property, WeaviateClass}
 
 import scala.jdk.CollectionConverters._
 import scala.sys.process._
@@ -55,8 +56,88 @@ semitechnologies/weaviate:$weaviateVersion"""
         .build(),
     ) ++ additionalProperties
     println(properties.map(_.getName))
-    val clazz = WeaviateClass.builder.className("Article")
-      .description("Article test class")
+    createClass("Article", "Article test class", properties)
+  }
+
+  def createBooksClass(): Unit = {
+    val properties = Seq(
+      Property.builder()
+        .name("title")
+        .dataType(List[String](DataType.TEXT).asJava)
+        .build(),
+      Property.builder()
+        .name("author")
+        .dataType(List[String](DataType.OBJECT).asJava)
+        .nestedProperties(List[NestedProperty](
+          Property.NestedProperty.builder()
+            .name("name")
+            .dataType(List[String](DataType.OBJECT).asJava)
+            .nestedProperties(List[NestedProperty](
+              Property.NestedProperty.builder()
+                .name("firstName")
+                .dataType(List[String](DataType.TEXT).asJava)
+                .build(),
+              Property.NestedProperty.builder()
+                .name("lastName")
+                .dataType(List[String](DataType.TEXT).asJava)
+                .build()
+            ).asJava)
+        .build(),
+          Property.NestedProperty.builder()
+            .name("age")
+            .dataType(List[String](DataType.INT).asJava)
+            .build()
+        ).asJava).build()
+    )
+    createClass("Books", "", properties)
+  }
+
+  def createAuthorsClass(): Unit = {
+    val properties = Seq(
+      Property.builder()
+        .name("genre")
+        .dataType(List[String](DataType.TEXT).asJava)
+        .build(),
+      Property.builder()
+        .name("authors")
+        .dataType(List[String](DataType.OBJECT_ARRAY).asJava)
+        .nestedProperties(List[NestedProperty](
+          Property.NestedProperty.builder()
+            .name("firstName")
+            .dataType(List[String](DataType.TEXT).asJava)
+            .build(),
+          Property.NestedProperty.builder()
+            .name("lastName")
+            .dataType(List[String](DataType.TEXT).asJava)
+            .build(),
+          Property.NestedProperty.builder()
+            .name("isAlive")
+            .dataType(List[String](DataType.BOOLEAN).asJava)
+            .build(),
+          Property.NestedProperty.builder()
+            .name("age")
+            .dataType(List[String](DataType.INT).asJava)
+            .build()
+        ).asJava).build()
+    )
+    createClass("Authors", "", properties)
+  }
+
+  def deleteClass(): Unit = {
+    deleteClass("Article")
+  }
+
+  def deleteBooksClass(): Unit = {
+    deleteClass("Books")
+  }
+
+  def deleteAuthorsClass(): Unit = {
+    deleteClass("Authors")
+  }
+
+  private def createClass(className: String, description: String, properties: Seq[Property]): Unit = {
+    val clazz = WeaviateClass.builder.className(className)
+      .description(description)
       .properties(properties.asJava).build
 
     val results = client.schema().classCreator().withClass(clazz).run
@@ -66,17 +147,17 @@ semitechnologies/weaviate:$weaviateVersion"""
         retries -= 1
         println("Retrying to create class in 0.1 seconds..")
         Thread.sleep(100)
-        createClass(additionalProperties: _*)
+        createClass(className, description, properties)
       }
     }
     println("Results: " + results.getResult)
     retries = 10
   }
 
-  def deleteClass(): Unit = {
+  private def deleteClass(className: String): Unit = {
     val result = client.schema().classDeleter()
-      .withClassName("Article")
+      .withClassName(className)
       .run()
-    if (result.hasErrors) println("Error deleting class Article " + result.getError.getMessages)
+    if (result.hasErrors) println(s"Error deleting class ${className} ${result.getError.getMessages}")
   }
 }

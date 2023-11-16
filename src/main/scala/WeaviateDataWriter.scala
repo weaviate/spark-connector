@@ -7,6 +7,7 @@ import org.apache.spark.sql.types._
 import io.weaviate.client.v1.data.model.WeaviateObject
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
 
 case class WeaviateCommitMessage(msg: String) extends WriterCommitMessage
@@ -74,7 +75,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       field._1.name match {
         case weaviateOptions.vector => builder = builder.vector(record.getArray(field._2).toArray(FloatType))
         case weaviateOptions.id => builder = builder.id(record.getString(field._2))
-        case _ => properties(field._1.name) = getValueFromField(field._2, record, field._1.dataType)
+        case _ => properties(field._1.name) = getValueFromField(field._2, record, field._1.dataType, false)
       }
     )
     if (weaviateOptions.id == null) {
@@ -83,7 +84,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     builder.properties(properties.asJava).build
   }
 
-  def getValueFromField(index: Int, record: InternalRow, dataType: DataType): AnyRef = {
+  def getValueFromField(index: Int, record: InternalRow, dataType: DataType, parseObjectArrayItem: Boolean): AnyRef = {
     dataType match {
       case StringType => if (record.isNullAt(index)) "" else record.getUTF8String(index).toString
       case BooleanType => if (record.isNullAt(index)) Boolean.box(false) else Boolean.box(record.getBoolean(index))
@@ -120,6 +121,27 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
         // contains the the days since EPOCH for DateType
         val daysSinceEpoch = record.getLong(index)
         java.time.LocalDate.ofEpochDay(daysSinceEpoch).toString + "T00:00:00Z"
+      case StructType(_) =>
+        val dt = dataType.asInstanceOf[StructType]
+        val rec = if (parseObjectArrayItem) record else record.getStruct(index, dt.length)
+        val objMap: mutable.Map[String, Object] = mutable.Map[String, Object]()
+        dt.foreach(f => {
+          if (!rec.isNullAt(dt.fieldIndex(f.name))) {
+            objMap += (f.name -> getValueFromField(dt.fieldIndex(f.name), rec, f.dataType, parseObjectArrayItem))
+          }
+        })
+        objMap.asJava
+      case ArrayType(StructType(_), true) =>
+        val dt = dataType.asInstanceOf[ArrayType]
+        val fields = dt.elementType.asInstanceOf[StructType]
+        val objList = ListBuffer[AnyRef]()
+        if (!record.isNullAt(index)) {
+          val arr = record.getArray(index).toObjectArray(fields)
+          arr.foreach(o => {
+            objList += getValueFromField(0, o.asInstanceOf[InternalRow], fields, parseObjectArrayItem = true)
+          })
+        }
+        objList.asJava
       case default => throw new SparkDataTypeNotSupported(s"DataType ${default} is not supported by Weaviate")
     }
   }

@@ -668,6 +668,92 @@ class SparkIntegrationTest
       WeaviateDocker.deleteClass()
     }
   }
+
+  test("Object property with Books with gRPC") {
+    val className = "Books"
+    WeaviateDocker.createBooksClass()
+    val df = spark.read.option("multiline", true).json("src/test/resources/books.json")
+
+    df.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("grpc:host", "localhost:50051")
+      .option("className", className)
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName(className)
+      .run()
+
+    if (results.hasErrors) {
+      println(s"Error getting ${className} ${results.getError.getMessages}")
+    }
+
+    assert(results.getResult.size == 3)
+    results.getResult.forEach(r => {
+      val props = r.getProperties
+      assert(props.get("title") != null)
+      assert(props.get("author") != null)
+      assert(props.get("author").isInstanceOf[java.util.Map[String, Object]])
+      val author = props.get("author").asInstanceOf[java.util.Map[String, Object]]
+      assert(author.get("name") != null)
+      assert(author.get("name").isInstanceOf[java.util.Map[String, Object]])
+      val name = author.get("name").asInstanceOf[java.util.Map[String, Object]]
+      assert(name.get("firstName") != null)
+      assert(name.get("lastName") != null)
+      if (name.get("firstName").asInstanceOf[String].equals("Stephen")) {
+        assert(author.get("age") == null)
+      } else {
+        assert(author.get("age") != null)
+      }
+    })
+    WeaviateDocker.deleteBooksClass()
+  }
+
+  test("Object Array property with Authors with gRPC") {
+    val className = "Authors"
+    WeaviateDocker.createAuthorsClass()
+    val df = spark.read.option("multiline", true).json("src/test/resources/authors.json")
+
+    df.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("grpc:host", "localhost:50051")
+      .option("className", className)
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName(className)
+      .run()
+
+    if (results.hasErrors) {
+      println(s"Error getting ${className} ${results.getError.getMessages}")
+    }
+
+    assert(results.getResult.size == 4)
+    results.getResult.forEach(r => {
+      val props = r.getProperties
+      assert(props.get("genre") != null)
+      val genre = props.get("genre").asInstanceOf[String]
+      if (genre.equals("to be defined") || genre.equals("empty")) {
+        assert(props.get("authors") == null)
+      } else {
+        assert(props.get("authors") != null)
+        assert(props.get("authors").isInstanceOf[java.util.List[java.util.Map[String, Object]]])
+        val authors = props.get("authors").asInstanceOf[java.util.List[java.util.Map[String, Object]]]
+        authors.forEach(author => {
+          assert(author.get("firstName") != null)
+          assert(author.get("lastName") != null)
+          assert(author.get("isAlive") != null)
+        })
+      }
+    })
+    WeaviateDocker.deleteAuthorsClass()
+  }
 }
 
 class SparkIntegrationTestsOpenAI

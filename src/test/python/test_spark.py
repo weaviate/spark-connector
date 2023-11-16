@@ -20,6 +20,7 @@ from kafka import KafkaProducer
 
 from .movie_schema import movie_schema
 from .event_schema import event_schema, spark_event_schema
+from .person_schema import person_schema, spark_person_schema
 
 
 def get_connector_version():
@@ -31,7 +32,7 @@ def get_connector_version():
 
 connector_version = os.environ.get("CONNECTOR_VERSION", get_connector_version())
 scala_version = os.environ.get("SCALA_VERSION", "2.12")
-weaviate_version = os.environ.get("WEAVIATE_VERSION", "1.20.1")
+weaviate_version = os.environ.get("WEAVIATE_VERSION", "1.22.4")
 spark_connector_jar_path = os.environ.get(
     "CONNECTOR_JAR_PATH", f"target/scala-{scala_version}/spark-connector-assembly-{connector_version}.jar"
 )
@@ -60,7 +61,7 @@ def weaviate_client():
         f"semitechnologies/weaviate:{weaviate_version}",
         detach=True,
         name=container_name,
-        ports={"8080/tcp": "8080"},
+        ports={"8080/tcp": "8080", "50051/tcp": "50051"},
         environment={"QUERY_DEFAULTS_LIMIT": 25,
                      "AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED": "true",
                      "DEFAULT_VECTORIZER_MODULE": "none",
@@ -381,3 +382,42 @@ def test_kafka_streaming_event_data(spark: SparkSession, weaviate_client: weavia
     result = weaviate_client.query.aggregate("Event").with_meta_count().do()
     events_uuids = set([e["id_column"] for e in events])
     assert result["data"]["Aggregate"]["Event"][0]["meta"]["count"] == len(events_uuids)
+
+def test_kafka_person_data(spark: SparkSession, weaviate_client: weaviate.Client, tmp_path, kafka_host):
+    weaviate_client.schema.create_class(person_schema)
+    producer = KafkaProducer(bootstrap_servers=[kafka_host],
+                             value_serializer=lambda m: json.dumps(m).encode('ascii'))
+
+    basepath = path.dirname(__file__)
+    people_path = path.abspath(path.join(basepath, "people.json"))
+    with open(people_path) as f:
+        people = json.loads(f.read())
+    for person in people:
+        kafka_result = producer.send('weaviate-test', person)
+        kafka_result.get(timeout=60)
+
+    df = spark.readStream \
+        .format("kafka") \
+        .option("kafka.bootstrap.servers", kafka_host) \
+        .option("subscribe", "weaviate-test") \
+        .option("startingOffsets", "earliest") \
+        .load() \
+        .select(from_json(col("value").cast("string"), spark_person_schema).alias("parsed_value")) \
+        .select(col("parsed_value.*"))
+
+    write_stream = (
+        df.writeStream
+        .format("io.weaviate.spark.Weaviate")
+        .option("scheme", "http")
+        .option("host", "localhost:8080")
+        .option("grpc:host", "localhost:50051")
+        .option("className", "Person")
+        .option("checkpointLocation", tmp_path.absolute())
+        .option("id", "id_column")
+        .outputMode("append")
+        .start()
+    )
+    write_stream.processAllAvailable()
+    result = weaviate_client.query.aggregate("Person").with_meta_count().do()
+    person_uuids = set([e["id_column"] for e in people])
+    assert result["data"]["Aggregate"]["Person"][0]["meta"]["count"] == len(person_uuids)
