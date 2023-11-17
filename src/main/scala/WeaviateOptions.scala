@@ -38,6 +38,8 @@ class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
       throw new WeaviateOptionsError(s"Invalid consistency level: ${value}")
     value
   }
+  val grpcSecured: Boolean = config.getBoolean(WEAVIATE_GRPC_SECURED, false)
+  val grpcHost: String = config.getOrDefault(WEAVIATE_GRPC_HOST, null)
 
   var headers: Map[String, String] = Map()
   config.forEach((option, value) => {
@@ -50,8 +52,7 @@ class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
 
   def getClient(): WeaviateClient = {
     if (client != null) return client
-    val config = new Config(scheme, host, headers.asJava, timeout, timeout, timeout)
-
+    val config = new Config(scheme, host, headers.asJava, timeout, grpcSecured, grpcHost)
     if (!oidcUsername.trim().isEmpty() && !oidcPassword.trim().isEmpty()) {
       client = WeaviateAuthClient.clientPassword(config, oidcUsername, oidcPassword, null)
     } else if (!oidcClientSecret.trim().isEmpty()) {
@@ -88,4 +89,6 @@ object WeaviateOptions {
   val WEAVIATE_API_KEY: String = "apiKey"
   val WEAVIATE_HEADER_PREFIX: String = "header:"
   val WEAVIATE_CONSISTENCY_LEVEL: String = "consistencyLevel"
+  val WEAVIATE_GRPC_SECURED: String = "grpc:secured"
+  val WEAVIATE_GRPC_HOST: String = "grpc:host"
 }
