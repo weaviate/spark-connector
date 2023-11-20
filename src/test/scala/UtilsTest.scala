@@ -1,7 +1,8 @@
 package io.weaviate.spark
 
 import io.weaviate.client.v1.schema.model.{DataType, Property}
-import org.apache.spark.sql.types.DataTypes
+import org.apache.spark
+import org.apache.spark.sql.types.{ArrayType, DataTypes, StructField, StructType}
 import org.scalatest.funsuite.AnyFunSuite
 
 import java.util
@@ -27,10 +28,38 @@ class UtilsTest extends AnyFunSuite {
     assert(Utils.weaviateToSparkDatatype(List("MyClassReference").asJava, null) == DataTypes.StringType)
     val objectProperty = getObjectPropertyType(DataType.OBJECT)
     val structProperty = Utils.weaviateToSparkDatatype(objectProperty.getDataType, objectProperty.getNestedProperties)
-    assert(structProperty != null)
+    assertStructType(structProperty)
     val objectArrayProperty = getObjectPropertyType(DataType.OBJECT_ARRAY)
     val arrayStructProperty = Utils.weaviateToSparkDatatype(objectArrayProperty.getDataType, objectArrayProperty.getNestedProperties)
     assert(arrayStructProperty != null)
+    assert(arrayStructProperty.isInstanceOf[ArrayType])
+    assert(arrayStructProperty.asInstanceOf[ArrayType].elementType.isInstanceOf[StructType])
+    assertStructType(arrayStructProperty.asInstanceOf[ArrayType].elementType.asInstanceOf[StructType])
+  }
+
+  private def assertStructType(dt: spark.sql.types.DataType): Unit = {
+    assert(dt != null)
+    assert(dt.isInstanceOf[StructType])
+    val st = dt.asInstanceOf[StructType]
+    // check objectProperty fields
+    assert(st.fieldIndex("nestedInt") == 0)
+    assert(st.fieldIndex("nestedNumber") == 1)
+    assert(st.fieldIndex("nestedText") == 2)
+    assert(st.fieldIndex("nestedObjects") == 3)
+    val nestedObjects = st.toIterator.find(_.name == "nestedObjects").get
+    // check nestedObjects fields
+    val nestedNames = List("nestedDateLvl2", "nestedBoolLvl2", "nestedNumbersLvl2", "moreNested")
+    val nestedObjectsFields = nestedObjects.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[StructType].fields
+    nestedObjectsFields.foreach(f => {
+      assert(nestedNames.contains(f.name))
+    })
+    // check moreNested fields
+    val moreNested = nestedObjectsFields.toIterator.find(_.name == "moreNested").get
+    val moreNestedNames = List("a", "b")
+    val moreNestedFields = moreNested.dataType.asInstanceOf[StructType].fields
+    moreNestedFields.foreach(f => {
+      moreNestedNames.contains(f.name)
+    })
   }
 
   private def getObjectPropertyType(dataType: String): Property = {

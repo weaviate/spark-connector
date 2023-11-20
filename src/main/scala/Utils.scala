@@ -9,6 +9,7 @@ import java.util
 object Utils {
   def weaviateToSparkDatatype(datatype: util.List[String], nestedProperties: util.List[Property.NestedProperty]): DataType = {
     datatype.get(0) match {
+      case "string" => DataTypes.StringType
       case "string[]" => DataTypes.createArrayType(DataTypes.StringType)
       case "int" => DataTypes.IntegerType
       case "int[]" => DataTypes.createArrayType(DataTypes.IntegerType)
@@ -18,6 +19,7 @@ object Utils {
       case "number[]" => DataTypes.createArrayType(DataTypes.DoubleType)
       case "date" => DataTypes.DateType
       case "date[]" => DataTypes.createArrayType(DataTypes.DateType)
+      case "text" => DataTypes.StringType
       case "text[]" => DataTypes.createArrayType(DataTypes.StringType)
       case "object" => createStructType(nestedProperties)
       case "object[]" => DataTypes.createArrayType(createStructType(nestedProperties))
