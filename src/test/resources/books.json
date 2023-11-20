@@ -1,0 +1,31 @@
+[
+  {
+    "title": "The Lord of the rings",
+    "author": {
+      "name": {
+        "firstName": "J.R.R.",
+        "lastName": "Tolkien"
+      },
+      "age": 81
+    }
+  },
+  {
+    "title": "Dune",
+    "author": {
+      "name": {
+        "firstName": "Frank",
+        "lastName": "Herbert"
+      },
+      "age": 65
+    }
+  },
+  {
+    "title": "Fairy Tale",
+    "author": {
+      "name": {
+        "firstName": "Stephen",
+        "lastName": "King"
+      }
+    }
+  }
+]

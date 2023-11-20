@@ -1,0 +1,41 @@
+[
+  {
+    "genre": "Fantasy",
+    "authors": [
+      {
+        "firstName": "J.R.R.",
+        "lastName": "Tolkien",
+        "isAlive": false,
+        "age": 81
+      },
+      {
+        "firstName": "George R. R.",
+        "lastName": "Martin",
+        "isAlive": true
+      }
+    ]
+  },
+  {
+    "genre": "Science-Fiction",
+    "authors": [
+      {
+        "firstName": "Frank",
+        "lastName": "Herbert",
+        "isAlive": false,
+        "age": 65
+      },
+      {
+        "firstName": "Jaroslaw",
+        "lastName": "Grzedowicz",
+        "isAlive": true
+      }
+    ]
+  },
+  {
+    "genre": "to be defined"
+  },
+  {
+    "genre": "empty",
+    "authors": []
+  }
+]

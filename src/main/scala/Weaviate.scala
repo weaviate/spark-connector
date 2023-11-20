@@ -22,7 +22,7 @@ class Weaviate extends TableProvider with DataSourceRegister {
     if (result.getResult == null) throw new WeaviateClassNotFoundError("Class "+className+ " was not found.")
     val properties = result.getResult.getProperties.asScala
     val structFields = properties.map(p =>
-      StructField(p.getName(), Utils.weaviateToSparkDatatype(p.getDataType), true, Metadata.empty))
+      StructField(p.getName(), Utils.weaviateToSparkDatatype(p.getDataType, p.getNestedProperties), true, Metadata.empty))
     if (weaviateOptions.vector != null)
       structFields.append(StructField(weaviateOptions.vector, DataTypes.createArrayType(DataTypes.FloatType), true, Metadata.empty))
     if (weaviateOptions.id != null)
