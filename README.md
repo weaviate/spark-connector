@@ -17,7 +17,7 @@ To use in your own Spark job you will first need to build the fat jar of the pac
 ### Using the JAR in Spark
 You can configure spark-shell or tools like spark-submit to use the JAR like this:
 ```shell
-spark-shell --jars spark-connector-assembly-1.2.9.jar
+spark-shell --jars spark-connector-assembly-1.3.0.jar
 ```
 
 ### Using the JAR in Databricks
