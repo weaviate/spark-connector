@@ -39,25 +39,28 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     val IDs = batch.keys.toList
 
     if (results.hasErrors || results.getResult == null) {
-      if (retries == 0) {
-        throw WeaviateResultError(s"error getting result and no more retries left." +
-          s" Error from Weaviate: ${results.getError.getMessages}")
-      }
       if (retries > 0) {
         logError(s"batch error: ${results.getError.getMessages}, will retry")
         logInfo(s"Retrying batch in ${weaviateOptions.retriesBackoff} seconds. Batch has following IDs: ${IDs}")
         Thread.sleep(weaviateOptions.retriesBackoff * 1000)
         writeBatch(retries - 1)
+      } else {
+        throw WeaviateResultError(s"error getting result and no more retries left." +
+          s" Error from Weaviate: ${results.getError.getMessages}")
       }
     } else {
       val (objectsWithSuccess, objectsWithError) = results.getResult.partition(_.getResult.getErrors == null)
-      if (objectsWithError.size > 0 && retries > 0) {
+      if (objectsWithError.size > 0) {
         val errors = objectsWithError.map(obj => s"${obj.getId}: ${obj.getResult.getErrors.toString}")
         val successIDs = objectsWithSuccess.map(_.getId).toList
-        logWarning(s"Successfully imported ${successIDs}. " +
-          s"Retrying objects with an error. Following objects in the batch upload had an error: ${errors.mkString("Array(", ", ", ")")}")
-        batch = batch -- successIDs
-        writeBatch(retries - 1)
+        if (retries > 0) {
+          logWarning(s"Successfully imported ${successIDs}. " +
+            s"Retrying objects with an error. Following objects in the batch upload had an error: ${errors.mkString("Array(", ", ", ")")}")
+          batch = batch -- successIDs
+          writeBatch(retries - 1)
+        } else {
+          logError(s"No retries left. Following objects in the batch upload had an error: ${errors.mkString("Array(", ", ", ")")}")
+        }
       } else {
         logInfo(s"Writing batch successful. IDs of inserted objects: ${IDs}")
         batch.clear()
