@@ -5,6 +5,7 @@ import org.apache.spark.sql.{AnalysisException, DataFrame, Encoder, Encoders}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
 import io.weaviate.client.v1.schema.model.Property
+import org.apache.spark.SparkException
 
 import scala.jdk.CollectionConverters._
 import scala.reflect.io.Directory
@@ -601,6 +602,25 @@ class SparkIntegrationTest
     assert(props.get("content") == "Sam and Sam")
     assert(props.get("wordCount") == 3)
     assert(results.getResult.size == 1)
+  }
+
+  test("Article with invalid IDs") {
+    WeaviateDocker.createClass()
+    import spark.implicits._
+    val id = "invalid-uuid"
+    val articles = Seq(ArticleWithID(id, "Sam", "Sam and Sam", 3)).toDF
+
+    val exception = intercept[SparkException] {
+      articles.write
+        .format("io.weaviate.spark.Weaviate")
+        .option("scheme", "http")
+        .option("host", "localhost:8080")
+        .option("className", "Article")
+        .option("id", "idCol")
+        .mode("append")
+        .save()
+    }
+    assert(exception.getMessage.contains("""must be of type uuid: "invalid-uuid""""))
   }
 
   test("Article with extra columns") {
