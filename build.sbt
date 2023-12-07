@@ -12,8 +12,6 @@ lazy val root = (project in file("."))
     idePackagePrefix := Some("io.weaviate.spark")
   )
 
-ThisBuild / scalafixDependencies += "org.scalalint" %% "rules" % "0.1.4"
-
 lazy val sparkVersion = "3.5.0"
 lazy val weaviateClientVersion = "4.5.0"
 libraryDependencies ++= Seq(
