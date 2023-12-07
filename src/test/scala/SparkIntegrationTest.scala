@@ -622,6 +622,28 @@ class SparkIntegrationTest
     }
     assert(exception.getMessage.contains("""must be of type uuid: "invalid-uuid""""))
   }
+  
+  test("Article with partially invalid batch") {
+    WeaviateDocker.createClass()
+    import spark.implicits._
+    val id = java.util.UUID.randomUUID.toString
+    val articles = Seq(
+      ArticleWithID(id, "Sam", "Sam and Sam", 3),
+      ArticleWithID("invalid-uuid", "Susie", "Big Cat", 2)
+    ).toDF
+
+    val exception = intercept[SparkException] {
+      articles.write
+        .format("io.weaviate.spark.Weaviate")
+        .option("scheme", "http")
+        .option("host", "localhost:8080")
+        .option("className", "Article")
+        .option("id", "idCol")
+        .mode("append")
+        .save()
+    }
+    assert(exception.getMessage.contains("""must be of type uuid: "invalid-uuid""""))
+  }
 
   test("Article with extra columns") {
     WeaviateDocker.createClass()
@@ -773,6 +795,24 @@ class SparkIntegrationTest
       }
     })
     WeaviateDocker.deleteAuthorsClass()
+  }
+
+  test("Write with wrong Weaviate address") {
+    WeaviateDocker.createClass()
+    import spark.implicits._
+    val articles = Seq(Article("Sam", "Sam and Sam", 3)).toDF
+
+    val exception = intercept[WeaviateResultError] {
+      articles.write
+        .format("io.weaviate.spark.Weaviate")
+        .option("scheme", "http")
+        .option("host", "localhost:1234")
+        .option("className", "Article")
+        .mode("append")
+        .save()
+    }
+
+    assert(exception.getMessage.contains("Connection refused"))
   }
 }
 
