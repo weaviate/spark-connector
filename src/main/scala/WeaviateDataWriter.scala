@@ -58,7 +58,14 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
           s"Retrying objects with an error. Following objects in the batch upload had an error: ${errors.mkString("Array(", ", ", ")")}")
         batch = batch -- successIDs
         writeBatch(retries - 1)
-      } else {
+      } else if (objectsWithError.size > 0) {
+        val errorIds = objectsWithError.map(obj => obj.getId)
+        val errorMessages = objectsWithError.map(obj => obj.getResult.getErrors.toString).distinct
+        throw WeaviateResultError(s"Error writing to weaviate and no more retries left." +
+          s" IDs with errors: ${errorIds.mkString("Array(", ", ", ")")}." +
+          s" Error messages: ${errorMessages.mkString("Array(", ", ", ")")}")
+      }
+      else {
         logInfo(s"Writing batch successful. IDs of inserted objects: ${IDs}")
         batch.clear()
       }

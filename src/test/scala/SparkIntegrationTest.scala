@@ -5,6 +5,7 @@ import org.apache.spark.sql.{AnalysisException, DataFrame, Encoder, Encoders}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
 import io.weaviate.client.v1.schema.model.Property
+import org.apache.spark.SparkException
 
 import scala.jdk.CollectionConverters._
 import scala.reflect.io.Directory
@@ -776,23 +777,18 @@ class SparkIntegrationTestsOpenAI
     WeaviateDocker.createClass()
 
     import spark.implicits._
-    val articles = Seq(Article("Sam", "Big Dog", 3)).toDF
-    articles.write
-      .format("io.weaviate.spark.Weaviate")
-      .option("scheme", "http")
-      .option("host", "localhost:8080")
-      .option("header:X-OpenAI-Api-Key", "shouldntwork")
-      .option("className", "Article")
-      .mode("append")
-      .save()
+    val articles = Seq(Article("Sam", "Big Dog", 3), Article("Susie", "Big Cat", 2)).toDF
 
-    val results = client.data().objectsGetter()
-      .withClassName("Article")
-      .run()
-    if (results.hasErrors) {
-      println("Error getting Articles" + results.getError.getMessages)
+    val exception = intercept[SparkException] {
+      articles.write
+        .format("io.weaviate.spark.Weaviate")
+        .option("scheme", "http")
+        .option("host", "localhost:8080")
+        .option("header:X-OpenAI-Api-Key", "shouldntwork")
+        .option("className", "Article")
+        .mode("append")
+        .save()
     }
-
-    assert(results.getResult.size == 0)
+    assert(exception.getMessage.contains("Incorrect API key provided: shouldntwork"))
   }
 }
