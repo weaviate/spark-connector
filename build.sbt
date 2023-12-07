@@ -2,9 +2,9 @@ import ReleaseTransformations._
 
 resolvers += Resolver.mavenLocal
 
-ThisBuild / scalaVersion := "2.12.17"
+ThisBuild / scalaVersion := "2.12.18"
 
-crossScalaVersions := Seq("2.12.17", "2.13.10")
+crossScalaVersions := Seq("2.12.18", "2.13.12")
 
 lazy val root = (project in file("."))
   .settings(
@@ -12,10 +12,10 @@ lazy val root = (project in file("."))
     idePackagePrefix := Some("io.weaviate.spark")
   )
 
-ThisBuild / scalafixDependencies += "org.scalalint" %% "rules" % "0.1.4"
+ThisBuild / scalafixDependencies += "org.scalalint" %% "rules" % "0.2.1" % "runtime"
 
 lazy val sparkVersion = "3.5.0"
-lazy val weaviateClientVersion = "4.4.1"
+lazy val weaviateClientVersion = "4.5.0"
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.2.17" % "test",
   "org.apache.spark" %% "spark-core" % sparkVersion % "provided,test",
@@ -23,7 +23,7 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-catalyst" % sparkVersion % "provided,test",
   "org.scala-lang.modules" %% "scala-collection-compat" % "2.11.0",
   "io.weaviate" % "client" % weaviateClientVersion,
-  "io.grpc" % "grpc-netty-shaded" % "1.58.0"
+  "io.grpc" % "grpc-netty-shaded" % "1.60.0"
 )
 
 assemblyShadeRules in assembly := Seq(
