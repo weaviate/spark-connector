@@ -224,8 +224,12 @@ class SparkIntegrationTest
       .build()
     )
     import spark.implicits._
-    val javaDate = java.sql.Date.valueOf("2022-11-18")
-    val articles = Seq(ArticleWithDate("Sam", "Sam and Sam", 3, javaDate)).toDF
+    val javaDates = Seq(
+      java.sql.Date.valueOf("1969-12-31"),
+      java.sql.Date.valueOf("1970-01-01"),
+      java.sql.Date.valueOf("2022-11-18"),
+    )
+    val articles = javaDates.map(ArticleWithDate("Sam", "Sam and Sam", 3, _)).toDF
 
     articles.write
       .format("io.weaviate.spark.Weaviate")
@@ -243,12 +247,25 @@ class SparkIntegrationTest
       println("Error getting Articles" + results.getError.getMessages)
     }
 
-    assert(results.getResult.size == 1)
-    val props = results.getResult.get(0).getProperties
-    assert(props.get("title") == "Sam")
-    assert(props.get("content") == "Sam and Sam")
-    assert(props.get("wordCount") == 3)
-    assert(props.get("date") == "2022-11-18T00:00:00Z")
+    val objects = results.getResult
+      .asScala
+      .sortBy(_.getProperties.get("date").asInstanceOf[String])
+
+    assert(objects.size == 3)
+
+    val expectedDates = Seq(
+      "1969-12-31T00:00:00Z",
+      "1970-01-01T00:00:00Z",
+      "2022-11-18T00:00:00Z",
+    )
+    objects.zip(expectedDates).foreach {
+      case (obj, expectedDate) =>
+        val props = obj.getProperties
+        assert(props.get("title") == "Sam")
+        assert(props.get("content") == "Sam and Sam")
+        assert(props.get("wordCount") == 3)
+        assert(props.get("date") == expectedDate)
+    }
     WeaviateDocker.deleteClass()
   }
 

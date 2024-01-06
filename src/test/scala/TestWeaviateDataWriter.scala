@@ -93,7 +93,7 @@ class TestWeaviateDataWriter extends AnyFunSuite {
     val dw = WeaviateDataWriter(weaviateOptions, schema)
     val sam = UTF8String.fromString("Sam")
     val javaDate = java.sql.Date.valueOf("2022-11-18")
-    val date = DateTimeUtils.fromJavaDate(javaDate).asInstanceOf[Long]
+    val date = DateTimeUtils.fromJavaDate(javaDate)
     val row = new GenericInternalRow(Array[Any](sam, sam, 5, date))
     val weaviateObject = dw.buildWeaviateObject(row)
 
