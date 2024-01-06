@@ -124,9 +124,9 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       case ArrayType(LongType, true) => throw new SparkDataTypeNotSupported(
         "Array of LongType is not supported. Convert to Spark Array of IntegerType instead")
       case DateType =>
-        // Weaviate requires an RFC3339 formatted string and Spark stores a long that
+        // Weaviate requires an RFC3339 formatted string and Spark stores an int that
         // contains the the days since EPOCH for DateType
-        val daysSinceEpoch = record.getLong(index)
+        val daysSinceEpoch = record.getInt(index)
         java.time.LocalDate.ofEpochDay(daysSinceEpoch).toString + "T00:00:00Z"
       case StructType(_) =>
         val dt = dataType.asInstanceOf[StructType]
