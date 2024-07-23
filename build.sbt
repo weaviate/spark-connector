@@ -14,16 +14,19 @@ lazy val root = (project in file("."))
 
 ThisBuild / scalafixDependencies += "org.scalalint" %% "rules" % "0.2.1" % "runtime"
 
-lazy val sparkVersion = "3.5.0"
-lazy val weaviateClientVersion = "4.5.1"
+lazy val sparkVersion = "3.5.1"
+lazy val grpcNettyShadedVersion = "1.65.1"
+lazy val weaviateClientVersion = "4.7.0"
+lazy val scalaCollectionCompatVersion = "2.12.0"
+lazy val scalatestVersion = "3.2.19"
 libraryDependencies ++= Seq(
-  "org.scalatest" %% "scalatest" % "3.2.17" % "test",
+  "org.scalatest" %% "scalatest" % scalatestVersion % "test",
   "org.apache.spark" %% "spark-core" % sparkVersion % "provided,test",
   "org.apache.spark" %% "spark-sql" % sparkVersion % "provided,test",
   "org.apache.spark" %% "spark-catalyst" % sparkVersion % "provided,test",
-  "org.scala-lang.modules" %% "scala-collection-compat" % "2.11.0",
+  "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
   "io.weaviate" % "client" % weaviateClientVersion,
-  "io.grpc" % "grpc-netty-shaded" % "1.60.1"
+  "io.grpc" % "grpc-netty-shaded" % grpcNettyShadedVersion
 )
 
 assemblyShadeRules in assembly := Seq(
