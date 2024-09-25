@@ -3,15 +3,19 @@ package io.weaviate.spark
 import WeaviateOptions._
 
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
-import io.weaviate.client.{Config, WeaviateClient, WeaviateAuthClient}
+import io.weaviate.client.{Config, WeaviateAuthClient, WeaviateClient}
+
 import scala.collection.JavaConverters._
 import io.weaviate.client.v1.data.replication.model.ConsistencyLevel
+
+import scala.util.Properties
 
 class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
   private val DEFAULT_BATCH_SIZE = 100
   private val DEFAULT_RETRIES = 2
   private val DEFAULT_RETRIES_BACKOFF = 2
   private val DEFAULT_TIMEOUT_SECONDS = 60
+  private val DATABRICKS_RUNTIME_VERSION = "DATABRICKS_RUNTIME_VERSION"
 
   val batchSize: Int =
     config
@@ -47,6 +51,10 @@ class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
       headers += (option.replace(WEAVIATE_HEADER_PREFIX, "") -> value)
     }
   })
+  Properties.envOrNone(DATABRICKS_RUNTIME_VERSION) match {
+    case Some(value) if value.nonEmpty => headers += ("X-Databricks-User-Agent" -> "weaviate+spark_connector")
+    case None =>
+  }
 
   var client: WeaviateClient = _
 
