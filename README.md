@@ -1,9 +1,6 @@
 # Weaviate Spark Connector
 For use in [Spark](https://spark.apache.org/docs/latest/) jobs to populate a Weaviate vector database.
 
-Status: [Alpha](https://github.com/weaviate/spark-connector/issues/97), data might not always get written to Weaviate so
-verify your data was actually written to Weaviate.
-
 ## Installation
 You can choose one of the following options to install the Weaviate Spark Connector:
 
