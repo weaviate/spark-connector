@@ -14,12 +14,13 @@ jobs:
         java: [ '8', '11' ]
         os: [ 'ubuntu-latest' ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: ${{ matrix.distribution }}
           java-version: ${{ matrix.java }}
+      - uses: sbt/setup-sbt@v1
       - run: rm .sbtopts
         if: ${{ matrix.java }} == "8"
       - name: Build, Unit Test and Scala Spark Integration tests
@@ -28,12 +29,13 @@ jobs:
   pyspark-integration-tests:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 11
+      - uses: sbt/setup-sbt@v1
       - name: Get release version
         run: |
           version=$(cat version.sbt | cut -d '"' -f2)
