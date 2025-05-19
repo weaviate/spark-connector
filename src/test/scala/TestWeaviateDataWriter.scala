@@ -1,6 +1,6 @@
 package io.weaviate.spark
 
-import org.apache.spark.sql.catalyst.expressions.{GenericInternalRow, Literal}
+import org.apache.spark.sql.catalyst.expressions.{GenericInternalRow, Literal, UnsafeArrayData}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.types.{DataType, DataTypes, Metadata, StringType, StructField, StructType}
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
@@ -150,5 +150,112 @@ class TestWeaviateDataWriter extends AnyFunSuite {
     assertThrows[WeaviateResultError] {
       dw.writeBatch(retries = 0)
     }
+  }
+
+  test("Test Build Weaviate Object with vector") {
+    val options: CaseInsensitiveStringMap =
+      new CaseInsensitiveStringMap(Map(
+        "scheme" -> "http", "host" -> "localhost",
+        "className" -> "Article", "id" -> "id",
+        "vector" -> "embedding").asJava)
+    val weaviateOptions: WeaviateOptions = new WeaviateOptions(options)
+    val structFields = Array[StructField](
+      StructField("id", DataTypes.StringType, true, Metadata.empty),
+      StructField("title", DataTypes.StringType, true, Metadata.empty),
+      StructField("content", DataTypes.StringType, true, Metadata.empty),
+      StructField("wordCount", DataTypes.IntegerType, true, Metadata.empty),
+      StructField("embedding", DataTypes.createArrayType(DataTypes.FloatType), true, Metadata.empty)
+    )
+    val schema = StructType(structFields)
+    val dw = WeaviateDataWriter(weaviateOptions, schema)
+    val sam = UTF8String.fromString("Sam")
+    val uuid = java.util.UUID.randomUUID.toString
+    val embedding = Array(0.111f, 0.222f)
+    val row = new GenericInternalRow(Array[Any](UTF8String.fromString(uuid), sam, sam, 5, UnsafeArrayData.fromPrimitiveArray(embedding)))
+    val weaviateObject = dw.buildWeaviateObject(row)
+
+    assert(weaviateObject.getProperties.get("title") == "Sam")
+    assert(weaviateObject.getProperties.get("content") == "Sam")
+    assert(weaviateObject.getProperties.get("wordCount") == 5)
+    assert(weaviateObject.getId == uuid)
+    assert(weaviateObject.getVector != null)
+    assert(weaviateObject.getVector.sameElements(embedding))
+    assert(weaviateObject.getTenant == null)
+  }
+
+  test("Test Build Weaviate Object with vectors") {
+    val options: CaseInsensitiveStringMap =
+      new CaseInsensitiveStringMap(Map(
+        "scheme" -> "http", "host" -> "localhost",
+        "className" -> "Article", "id" -> "id",
+        "vectors:v1" -> "embedding1", "vectors:v2" -> "embedding2").asJava)
+    val weaviateOptions: WeaviateOptions = new WeaviateOptions(options)
+    val structFields = Array[StructField](
+      StructField("id", DataTypes.StringType, true, Metadata.empty),
+      StructField("title", DataTypes.StringType, true, Metadata.empty),
+      StructField("content", DataTypes.StringType, true, Metadata.empty),
+      StructField("wordCount", DataTypes.IntegerType, true, Metadata.empty),
+      StructField("embedding1", DataTypes.createArrayType(DataTypes.FloatType), true, Metadata.empty),
+      StructField("embedding2", DataTypes.createArrayType(DataTypes.FloatType), true, Metadata.empty)
+    )
+    val schema = StructType(structFields)
+    val dw = WeaviateDataWriter(weaviateOptions, schema)
+    val sam = UTF8String.fromString("Sam")
+    val uuid = java.util.UUID.randomUUID.toString
+    val embedding1 = Array(0.111f, 0.222f)
+    val embedding2 = Array(0.1f, 0.2f)
+    val row = new GenericInternalRow(Array[Any](UTF8String.fromString(uuid), sam, sam, 5,
+      UnsafeArrayData.fromPrimitiveArray(embedding1), UnsafeArrayData.fromPrimitiveArray(embedding2)))
+    val weaviateObject = dw.buildWeaviateObject(row)
+
+    assert(weaviateObject.getProperties.get("title") == "Sam")
+    assert(weaviateObject.getProperties.get("content") == "Sam")
+    assert(weaviateObject.getProperties.get("wordCount") == 5)
+    assert(weaviateObject.getId == uuid)
+    assert(weaviateObject.getVector == null)
+    assert(weaviateObject.getVectors != null && weaviateObject.getVectors.size() == 2)
+    assert(weaviateObject.getVectors.get("v1").sameElements(embedding1))
+    assert(weaviateObject.getVectors.get("v2").sameElements(embedding2))
+    assert(weaviateObject.getTenant == null)
+  }
+
+  test("Test Build Weaviate Object with vectors and multi vectors") {
+    val options: CaseInsensitiveStringMap =
+      new CaseInsensitiveStringMap(Map(
+        "scheme" -> "http", "host" -> "localhost",
+        "className" -> "Article", "id" -> "id",
+        "vectors:v1" -> "embedding1", "multivectors:colbert" -> "multivec").asJava)
+    val weaviateOptions: WeaviateOptions = new WeaviateOptions(options)
+    val structFields = Array[StructField](
+      StructField("id", DataTypes.StringType, true, Metadata.empty),
+      StructField("title", DataTypes.StringType, true, Metadata.empty),
+      StructField("content", DataTypes.StringType, true, Metadata.empty),
+      StructField("wordCount", DataTypes.IntegerType, true, Metadata.empty),
+      StructField("embedding1", DataTypes.createArrayType(DataTypes.FloatType), true, Metadata.empty),
+      StructField("multivec", DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.FloatType)), true, Metadata.empty)
+    )
+    val schema = StructType(structFields)
+    val dw = WeaviateDataWriter(weaviateOptions, schema)
+    val sam = UTF8String.fromString("Sam")
+    val uuid = java.util.UUID.randomUUID.toString
+    val embedding1 = Array(0.111f, 0.222f)
+    val colbert = Array(Array(0.1f, 0.2f),Array(0.3f, 0.4f))
+    val colbertArrayData = colbert.map(innerArray => UnsafeArrayData.fromPrimitiveArray(innerArray))
+    val row = new GenericInternalRow(Array[Any](UTF8String.fromString(uuid), sam, sam, 5,
+      UnsafeArrayData.fromPrimitiveArray(embedding1), colbertArrayData))
+    val weaviateObject = dw.buildWeaviateObject(row)
+
+    assert(weaviateObject.getProperties.get("title") == "Sam")
+    assert(weaviateObject.getProperties.get("content") == "Sam")
+    assert(weaviateObject.getProperties.get("wordCount") == 5)
+    assert(weaviateObject.getId == uuid)
+    assert(weaviateObject.getVector == null)
+    assert(weaviateObject.getVectors != null && weaviateObject.getVectors.size() == 1)
+    assert(weaviateObject.getVectors.get("v1").sameElements(embedding1))
+    assert(weaviateObject.getMultiVectors != null && weaviateObject.getMultiVectors.size() == 1)
+    assert(weaviateObject.getMultiVectors.get("colbert").length == 2)
+    assert(weaviateObject.getMultiVectors.get("colbert")(0).sameElements(colbert(0)))
+    assert(weaviateObject.getMultiVectors.get("colbert")(1).sameElements(colbert(1)))
+    assert(weaviateObject.getTenant == null)
   }
 }

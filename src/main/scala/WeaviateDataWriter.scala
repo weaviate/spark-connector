@@ -5,10 +5,12 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
 import org.apache.spark.sql.types._
 import io.weaviate.client.v1.data.model.WeaviateObject
+import org.apache.spark.sql.catalyst.util.{ArrayData, GenericArrayData}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
+
 
 case class WeaviateCommitMessage(msg: String) extends WriterCommitMessage
 
@@ -78,15 +80,39 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       builder = builder.tenant(weaviateOptions.tenant)
     }
     val properties = mutable.Map[String, AnyRef]()
+    val vectors = mutable.Map[String, Array[Float]]()
+    val multiVectors = mutable.Map[String, Array[Array[Float]]]()
     schema.zipWithIndex.foreach(field =>
       field._1.name match {
         case weaviateOptions.vector => builder = builder.vector(record.getArray(field._2).toArray(FloatType))
+        case key if weaviateOptions.vectors.contains(key) => vectors += (weaviateOptions.vectors(key) -> record.getArray(field._2).toArray(FloatType))
+        case key if weaviateOptions.multiVectors.contains(key) => {
+          val multiVectorArrayData = record.get(field._2, ArrayType(ArrayType(FloatType))) match {
+            case array: ArrayData => array // Standard case: ArrayData
+            case array: org.apache.spark.sql.catalyst.expressions.UnsafeArrayData => array // Standard case: ArrayData
+            case rawArray: Array[_] if rawArray.forall(_.isInstanceOf[org.apache.spark.sql.catalyst.expressions.UnsafeArrayData]) =>
+              // Handle case where the field is a raw array of UnsafeArrayData
+              new GenericArrayData(rawArray.asInstanceOf[Array[org.apache.spark.sql.catalyst.expressions.UnsafeArrayData]])
+            case other => throw new IllegalArgumentException(s"Expected ArrayData, found ${other.getClass}")
+          }
+          val multiVector: Array[Array[Float]] = multiVectorArrayData.toArray[ArrayData](ArrayType(FloatType))
+            .map(innerArrayData => innerArrayData.toFloatArray())
+
+          multiVectors += (weaviateOptions.multiVectors(key) -> multiVector)
+        }
         case weaviateOptions.id => builder = builder.id(record.getString(field._2))
         case _ => properties(field._1.name) = getValueFromField(field._2, record, field._1.dataType, false)
       }
     )
     if (weaviateOptions.id == null) {
       builder.id(java.util.UUID.randomUUID.toString)
+    }
+
+    if (vectors.nonEmpty) {
+      builder.vectors(vectors.map { case (key, arr) => key -> arr.map(Float.box) }.asJava)
+    }
+    if (multiVectors.nonEmpty) {
+      builder.multiVectors(multiVectors.map { case (key, multiVector) => key -> multiVector.map { vec => { vec.map(Float.box) }} }.toMap.asJava)
     }
     builder.properties(properties.asJava).build
   }

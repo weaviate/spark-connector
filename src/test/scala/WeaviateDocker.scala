@@ -1,11 +1,17 @@
 package io.weaviate.spark
 
+import io.weaviate.client.v1.misc.model.{MultiVectorConfig, VectorIndexConfig}
 import io.weaviate.client.v1.schema.model.Property.NestedProperty
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import io.weaviate.client.v1.schema.model.{DataType, Property, WeaviateClass}
 
+import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.sys.process._
+
+import java.net.http.{HttpClient, HttpRequest, HttpResponse}
+import java.net.URI
+import scala.util.Try
 
 object WeaviateDocker {
   val options: CaseInsensitiveStringMap =
@@ -19,7 +25,7 @@ object WeaviateDocker {
   var retries = 10
 
   def start(vectorizerModule: String = "none", enableModules: String = "text2vec-openai"): Int = {
-    val weaviateVersion = "1.22.4"
+    val weaviateVersion = "1.30.6"
     val docker_run =
       s"""docker run -d --name=weaviate-test-container-will-be-deleted
 -p 8080:8080
@@ -28,7 +34,9 @@ object WeaviateDocker {
 -e AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
 -e DEFAULT_VECTORIZER_MODULE=$vectorizerModule
 -e ENABLE_MODULES=$enableModules
--e CLUSTER_HOSTNAME=node1
+-e CLUSTER_HOSTNAME=weaviate-0
+-e RAFT_BOOTSTRAP_EXPECT=1
+-e RAFT_JOIN=weaviate-0
 -e PERSISTENCE_DATA_PATH=./data
 semitechnologies/weaviate:$weaviateVersion"""
     val exit_code = docker_run ! logger
@@ -38,6 +46,28 @@ semitechnologies/weaviate:$weaviateVersion"""
   def stop(): Int = {
     "docker stop weaviate-test-container-will-be-deleted" ! logger
     "docker rm weaviate-test-container-will-be-deleted" ! logger
+  }
+
+  def checkReadyEndpoint(): Boolean = {
+    val client = HttpClient.newHttpClient()
+    val readyUri = URI.create(s"http://localhost:8080/v1/.well-known/ready")
+
+    def checkReadinessProbe: Boolean = {
+      Try {
+        val request = HttpRequest.newBuilder().uri(readyUri).GET().build()
+        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+        response.statusCode() == 200
+      }.getOrElse(false)
+    }
+
+    val maxAttempts = 10
+    for (_ <- 1 to maxAttempts) {
+      if (checkReadinessProbe) {
+        return true
+      }
+      Thread.sleep(1000L)
+    }
+    false
   }
 
   def createClass(additionalProperties: Property*): Unit = {
@@ -123,6 +153,46 @@ semitechnologies/weaviate:$weaviateVersion"""
     createClass("Authors", "", properties)
   }
 
+  def createRegularVectorsClass(): Unit = {
+    createNamedVectorsClass("RegularVectors", false)
+  }
+
+  def createMultiVectorsClass(): Unit = {
+    createNamedVectorsClass("MultiVectors", true)
+  }
+
+  private def createNamedVectorsClass(name: String, withMultiVectors: Boolean): Unit = {
+    val properties = Seq(
+      Property.builder()
+        .name("title")
+        .dataType(List[String](DataType.TEXT).asJava)
+        .build(),
+    )
+
+    val vectorConfig = mutable.Map[String, WeaviateClass.VectorConfig]()
+
+    val regular = WeaviateClass.VectorConfig.builder()
+      .vectorizer(Map[String, Object]("none" -> new Object()).asJava)
+      .vectorIndexType("hnsw")
+      .build()
+
+    vectorConfig += ("regular" -> regular)
+
+    if (withMultiVectors) {
+      val colbert = WeaviateClass.VectorConfig.builder()
+        .vectorizer(Map[String, Object]("none" -> new Object()).asJava)
+        .vectorIndexConfig(VectorIndexConfig.builder()
+          .multiVector(MultiVectorConfig.builder().build())
+          .build())
+        .vectorIndexType("hnsw")
+        .build()
+
+      vectorConfig += ("colbert" -> colbert)
+    }
+
+    createClass(name, "", properties, Some(vectorConfig.toMap))
+  }
+
   def deleteClass(): Unit = {
     deleteClass("Article")
   }
@@ -135,11 +205,24 @@ semitechnologies/weaviate:$weaviateVersion"""
     deleteClass("Authors")
   }
 
-  private def createClass(className: String, description: String, properties: Seq[Property]): Unit = {
-    val clazz = WeaviateClass.builder.className(className)
-      .description(description)
-      .properties(properties.asJava).build
+  def deleteRegularVectorsClass(): Unit = {
+    deleteClass("RegularVectors")
+  }
 
+  def deleteMultiVectorsClass(): Unit = {
+    deleteClass("MultiVectors")
+  }
+
+  private def createClass(className: String, description: String, properties: Seq[Property], vectorConfig: Option[Map[String, WeaviateClass.VectorConfig]] = None): Unit = {
+    var clazzBuilder = WeaviateClass.builder.className(className)
+      .description(description)
+      .properties(properties.asJava)
+
+    if (vectorConfig.isDefined) {
+      clazzBuilder = clazzBuilder.vectorConfig(vectorConfig.get.asJava)
+    }
+
+    val clazz = clazzBuilder.build
     val results = client.schema().classCreator().withClass(clazz).run
     if (results.hasErrors) {
       println("insert error" + results.getError.getMessages)

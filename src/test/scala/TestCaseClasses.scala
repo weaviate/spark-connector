@@ -4,6 +4,8 @@ case class Article(title: String, content: String, wordCount: Int)
 
 case class ArticleWithVector(title: String, content: String, wordCount: Int, vector: Array[Float])
 
+case class ArticleWithEmbedding(title: String, content: String, wordCount: Int, embedding: Array[Float])
+
 case class ArticleDifferentOrder(content: String, wordCount: Int, title: String)
 
 case class ArticleWithID(idCol: String, title: String, content: String, wordCount: Int)
@@ -32,3 +34,7 @@ case class ArticleWithIntArray(title: String, content: String, wordCount: Int, i
 
 case class ArticleWithAll(title: String, content: String, wordCount: Int, keywords: Array[String],
                           customId: String, myBool: Boolean)
+
+case class RegularVectorsWithVectors(title: String, embedding: Array[Float])
+
+case class MultiVectorWithAllVectors(title: String, regularVector: Array[Float], multiVector: Array[Array[Float]])

@@ -302,5 +302,36 @@ class TestWeaviateOptions extends AnyFunSuite {
       new WeaviateOptions(options)
     }
   }
+
+  test("Test that vectors are added correctly") {
+    val options: CaseInsensitiveStringMap =
+      new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost",
+        "className" -> "pinball", "batchSize" -> "19", "retries" -> "5", "retriesBackoff" -> "5",
+        "oidc:accessToken" -> "accessToken", "oidc:accessTokenLifetime" -> "100", "oidc:refreshToken" -> "refreshToken",
+        "vectors:vec1" -> "emb1", "vectors:vec2" -> "emb2",
+        "multiVectors:mv" -> "multivector1", "multiVectors:colbert" -> "multivector2").asJava)
+    val weaviateOptions: WeaviateOptions = new WeaviateOptions(options)
+
+    assert(weaviateOptions.scheme == "http")
+    assert(weaviateOptions.host == "localhost")
+    assert(weaviateOptions.className == "pinball")
+    assert(weaviateOptions.tenant == null)
+    assert(weaviateOptions.batchSize == 19)
+    assert(weaviateOptions.retries == 5)
+    assert(weaviateOptions.retriesBackoff == 5)
+    assert(weaviateOptions.timeout == 60)
+    assert(weaviateOptions.oidcUsername == "")
+    assert(weaviateOptions.oidcPassword == "")
+    assert(weaviateOptions.oidcClientSecret == "")
+    assert(weaviateOptions.oidcAccessToken == "accessToken")
+    assert(weaviateOptions.oidcAccessTokenLifetime == 100)
+    assert(weaviateOptions.oidcRefreshToken == "refreshToken")
+    assert(weaviateOptions.vectors.size == 2)
+    assert(weaviateOptions.vectors.asJava.get("emb1") == "vec1")
+    assert(weaviateOptions.vectors.asJava.get("emb2") == "vec2")
+    assert(weaviateOptions.multiVectors.size == 2)
+    assert(weaviateOptions.multiVectors.asJava.get("multivector1") == "mv")
+    assert(weaviateOptions.multiVectors.asJava.get("multivector2") == "colbert")
+  }
 }
 
