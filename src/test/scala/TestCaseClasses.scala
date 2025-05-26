@@ -38,3 +38,5 @@ case class ArticleWithAll(title: String, content: String, wordCount: Int, keywor
 case class RegularVectorsWithVectors(title: String, embedding: Array[Float])
 
 case class MultiVectorWithAllVectors(title: String, regularVector: Array[Float], multiVector: Array[Array[Float]])
+
+case class MixedVectorWithAllVectors(title: String, regularVector: Array[Float], embedding: Array[Float], multiVector: Array[Array[Float]], colbert: Array[Array[Float]])
