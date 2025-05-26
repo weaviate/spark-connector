@@ -1,0 +1,7 @@
+pyspark==3.5.5
+weaviate-client==4.14.4
+pytest
+docker
+pandas
+testcontainers
+kafka-python

@@ -1,0 +1,34 @@
+[
+  {
+    "id_column": "00000000-0000-0000-0000-000000000001",
+    "author": "J.R.R. Tolkien",
+    "title": "The Lord of the rings",
+    "description": "\"The Lord of the Rings\" is a timeless epic fantasy tale penned by J.R.R. Tolkien. Set in the fictional world of Middle-earth, the story follows the quest of Frodo Baggins, a humble hobbit, who is tasked with destroying a powerful and corrupting artifact, the One Ring. Accompanied by a diverse fellowship of companions, including humans, elves, dwarves, and other hobbits, Frodo embarks on a perilous journey across Middle-earth to Mount Doom, the only place where the Ring can be unmade. Along the way, they encounter ancient evils, forge unbreakable bonds of friendship, and face monumental challenges that will test their courage and resolve. As the fate of Middle-earth hangs in the balance, Frodo and his companions must confront the forces of darkness in an epic struggle for the survival of their world. Rich with themes of friendship, sacrifice, and the eternal battle between good and evil, \"The Lord of the Rings\" remains one of the most beloved and influential works of fantasy literature ever written.",
+    "embedding": [0.001, 0.002],
+    "multi_vector": [[0.001, 0.002], [0.003, 0.004]]
+  },
+  {
+    "id_column": "00000000-0000-0000-0000-000000000002",
+    "author": "Isaac Asimov",
+    "title": "Foundation",
+    "description": "\"Foundation\" by Isaac Asimov is a groundbreaking science fiction novel that explores the concept of psychohistory—a mathematical science capable of predicting the future of large populations. Set in a distant future where the Galactic Empire is in decline, the story follows mathematician Hari Seldon, who predicts the imminent fall of civilization. To preserve knowledge and shorten the dark ages that will follow, Seldon establishes the Foundation—a secretive organization tasked with guiding humanity's destiny. Spanning centuries, \"Foundation\" chronicles the Foundation's efforts to navigate political intrigue, technological advancement, and the rise and fall of empires. Asimov's masterful storytelling and thought-provoking exploration of sociopolitical themes make \"Foundation\" a timeless classic of science fiction literature.",
+    "embedding": [0.111, 0.222],
+    "multi_vector": [[0.111, 0.112], [0.113, 0.114]]
+  },
+  {
+    "id_column": "00000000-0000-0000-0000-000000000003",
+    "author": "Richard K. Morgan",
+    "title": "Altered Carbon",
+    "description": "\"Altered Carbon\" by Richard K. Morgan is a gripping science fiction novel set in a future where consciousness can be transferred between bodies, known as \"sleeves,\" and death has become nearly obsolete for the wealthy. The story follows Takeshi Kovacs, a former soldier turned private investigator, who is hired to solve the murder of a wealthy aristocrat, Laurens Bancroft. As Kovacs delves deeper into the seedy underbelly of a society where the rich live for centuries and the poor struggle to survive, he uncovers a conspiracy that threatens to unravel the fabric of society itself. Blending hard-boiled detective noir with cyberpunk elements and thought-provoking explorations of identity, morality, and the commodification of life, \"Altered Carbon\" is a thrilling and immersive exploration of a dystopian future where the line between humanity and technology has blurred beyond recognition.",
+    "embedding": [0.5, 0.51],
+    "multi_vector": [[0.000000001, 0.000000002], [0.0000000001, 0.000000002]]
+  },
+  {
+    "id_column": "00000000-0000-0000-0000-000000000004",
+    "author": "Frank Herbert",
+    "title": "Dune",
+    "description": "\"Dune\" is a science fiction masterpiece written by Frank Herbert. Set in a distant future where noble houses vie for control of the desert planet Arrakis, known for its valuable spice melange, the story follows young Paul Atreides as his family assumes stewardship of Arrakis. Paul's journey intertwines with political intrigue, betrayal, and a prophesied destiny that could change the fate of the universe. As Paul navigates the harsh desert landscape and confronts the enigmatic Fremen people, he undergoes a transformation that will shape the course of history. \"Dune\" is a sweeping epic filled with intricate world-building, complex characters, and philosophical themes that have captivated readers for generations.",
+    "embedding": [0.6, 0.61],
+    "multi_vector": [[0.6, 0.7], [0.8, 0.9]]
+  }
+]
