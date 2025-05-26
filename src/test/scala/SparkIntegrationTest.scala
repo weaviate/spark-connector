@@ -932,6 +932,49 @@ class SparkIntegrationTest
     assert(props.get("title") == "Title")
     WeaviateDocker.deleteMultiVectorsClass()
   }
+
+  test("MixedVectors with Spark provided named vectors") {
+    WeaviateDocker.createMixedVectorsClass()
+    import spark.implicits._
+    val namedVectors = Seq(MixedVectorWithAllVectors("Mixed title",
+      Array(0.111f, 0.222f), Array(-0.111f, -0.222f),
+      Array(Array(0.1f, 0.2f), Array(0.3f, 0.4f)), Array(Array(-0.1f, -0.2f), Array(-0.3f, -0.4f)))).toDF
+
+    namedVectors.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("grpc:host", "localhost:50051")
+      .option("className", "MixedVectors")
+      .option("vectors:regular", "regularVector")
+      .option("vectors:regular2", "embedding")
+      .option("multiVectors:colbert", "multiVector")
+      .option("multiVectors:colbert2", "colbert")
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("MixedVectors")
+      .withVector()
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting MixedVectors" + results.getError.getMessages)
+    }
+
+    assert(results.getResult.size == 1)
+    assert(results.getResult.get(0).getVectors.get("regular") sameElements Array(0.111f, 0.222f))
+    assert(results.getResult.get(0).getVectors.get("regular2") sameElements Array(-0.111f, -0.222f))
+    assert(results.getResult.get(0).getMultiVectors.get("colbert").length == 2)
+    assert(results.getResult.get(0).getMultiVectors.get("colbert")(0) sameElements Array(0.1f, 0.2f))
+    assert(results.getResult.get(0).getMultiVectors.get("colbert")(1) sameElements Array(0.3f, 0.4f))
+    assert(results.getResult.get(0).getMultiVectors.get("colbert2").length == 2)
+    assert(results.getResult.get(0).getMultiVectors.get("colbert2")(0) sameElements Array(-0.1f, -0.2f))
+    assert(results.getResult.get(0).getMultiVectors.get("colbert2")(1) sameElements Array(-0.3f, -0.4f))
+    val props = results.getResult.get(0).getProperties
+    assert(props.get("title") == "Mixed title")
+    WeaviateDocker.deleteMixedVectorsClass()
+  }
 }
 
 class SparkIntegrationTestsOpenAI

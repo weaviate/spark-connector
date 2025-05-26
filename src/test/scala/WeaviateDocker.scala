@@ -164,7 +164,11 @@ semitechnologies/weaviate:$weaviateVersion"""
     createNamedVectorsClass("MultiVectors", true)
   }
 
-  private def createNamedVectorsClass(name: String, withMultiVectors: Boolean): Unit = {
+  def createMixedVectorsClass(): Unit = {
+    createNamedVectorsClass("MixedVectors", withMultiVectors = true, withAdditionalVectors = true)
+  }
+
+  private def createNamedVectorsClass(name: String, withMultiVectors: Boolean, withAdditionalVectors: Boolean = false): Unit = {
     val properties = Seq(
       Property.builder()
         .name("title")
@@ -193,6 +197,25 @@ semitechnologies/weaviate:$weaviateVersion"""
       vectorConfig += ("colbert" -> colbert)
     }
 
+    if (withAdditionalVectors) {
+      val regular2 = WeaviateClass.VectorConfig.builder()
+        .vectorizer(Map[String, Object]("none" -> new Object()).asJava)
+        .vectorIndexType("flat")
+        .build()
+
+      vectorConfig += ("regular2" -> regular2)
+
+      val colbert2 = WeaviateClass.VectorConfig.builder()
+        .vectorizer(Map[String, Object]("none" -> new Object()).asJava)
+        .vectorIndexConfig(VectorIndexConfig.builder()
+          .multiVector(MultiVectorConfig.builder().build())
+          .build())
+        .vectorIndexType("hnsw")
+        .build()
+
+      vectorConfig += ("colbert2" -> colbert2)
+    }
+
     createClass(name, "", properties, Some(vectorConfig.toMap))
   }
 
@@ -214,6 +237,10 @@ semitechnologies/weaviate:$weaviateVersion"""
 
   def deleteMultiVectorsClass(): Unit = {
     deleteClass("MultiVectors")
+  }
+
+  def deleteMixedVectorsClass(): Unit = {
+    deleteClass("MixedVectors")
   }
 
   private def createClass(className: String, description: String, properties: Seq[Property], vectorConfig: Option[Map[String, WeaviateClass.VectorConfig]] = None): Unit = {
