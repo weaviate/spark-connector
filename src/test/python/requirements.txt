@@ -1,4 +1,4 @@
-pyspark==3.4.0
+pyspark==3.5.5
 pytest
 docker
 weaviate-client==3.26.7

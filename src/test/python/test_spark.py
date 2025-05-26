@@ -20,6 +20,7 @@ from kafka import KafkaProducer
 
 from .movie_schema import movie_schema
 from .event_schema import event_schema, spark_event_schema
+from .byov_schema import byov_schema, spark_byov_schema
 from .person_schema import person_schema, spark_person_schema
 
 
@@ -32,7 +33,7 @@ def get_connector_version():
 
 connector_version = os.environ.get("CONNECTOR_VERSION", get_connector_version())
 scala_version = os.environ.get("SCALA_VERSION", "2.12")
-weaviate_version = os.environ.get("WEAVIATE_VERSION", "1.22.4")
+weaviate_version = os.environ.get("WEAVIATE_VERSION", "1.30.3")
 spark_connector_jar_path = os.environ.get(
     "CONNECTOR_JAR_PATH", f"target/scala-{scala_version}/spark-connector-assembly-{connector_version}.jar"
 )
@@ -421,3 +422,45 @@ def test_kafka_person_data(spark: SparkSession, weaviate_client: weaviate.Client
     result = weaviate_client.query.aggregate("Person").with_meta_count().do()
     person_uuids = set([e["id_column"] for e in people])
     assert result["data"]["Aggregate"]["Person"][0]["meta"]["count"] == len(person_uuids)
+
+def test_kafka_streaming_byov_data(spark: SparkSession, weaviate_client: weaviate.Client, tmp_path, kafka_host):
+    weaviate_client.schema.create_class(byov_schema)
+    producer = KafkaProducer(bootstrap_servers=[kafka_host],
+                             value_serializer=lambda m: json.dumps(m).encode('ascii'))
+
+    basepath = path.dirname(__file__)
+    events_path = path.abspath(path.join(basepath, "byov.json"))
+    with open(events_path) as f:
+        events = json.loads(f.read())
+    for event in events:
+        kafka_result = producer.send('weaviate-test', event)
+        kafka_result.get(timeout=60)
+
+    df = spark.readStream \
+        .format("kafka") \
+        .option("kafka.bootstrap.servers", kafka_host) \
+        .option("subscribe", "weaviate-test") \
+        .option("startingOffsets", "earliest") \
+        .load() \
+        .select(from_json(col("value").cast("string"), spark_byov_schema).alias("parsed_value")) \
+        .select(col("parsed_value.*"))
+
+    write_stream = (
+        df.writeStream
+        .format("io.weaviate.spark.Weaviate")
+        .option("scheme", "http")
+        .option("host", "localhost:8080")
+        .option("className", "BringYourOwnVector")
+        .option("checkpointLocation", tmp_path.absolute())
+        .option("id", "id_column")
+        .option("vector", "embedding")
+        .outputMode("append")
+        .start()
+    )
+    write_stream.processAllAvailable()
+    results = weaviate_client.data_object.get(with_vector=True)
+    assert len(results['objects']) == 2
+    obj = weaviate_client.data_object.get_by_id("00000000-0000-0000-0000-000000000001", with_vector=True)
+    assert obj["vector"] == [0.001, 0.002]
+    obj = weaviate_client.data_object.get_by_id("00000000-0000-0000-0000-000000000002", with_vector=True)
+    assert obj["vector"] == [0.111, 0.222]

@@ -56,6 +56,20 @@ class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
     case None =>
   }
 
+  var vectors: Map[String, String] = Map()
+  config.forEach((option, value) => {
+    if (option.startsWith(WEAVIATE_VECTORS_COLUMN_PREFIX)) {
+      vectors += (value -> option.replace(WEAVIATE_VECTORS_COLUMN_PREFIX, ""))
+    }
+  })
+
+  var multiVectors: Map[String, String] = Map()
+  config.forEach((option, value) => {
+    if (option.startsWith(WEAVIATE_MULTIVECTORS_COLUMN_PREFIX)) {
+      multiVectors += (value -> option.replace(WEAVIATE_MULTIVECTORS_COLUMN_PREFIX, ""))
+    }
+  })
+
   var client: WeaviateClient = _
 
   def getClient(): WeaviateClient = {
@@ -84,6 +98,8 @@ object WeaviateOptions {
   val WEAVIATE_CLASSNAME_CONF: String  = "className"
   val WEAVIATE_TENANT_CONF: String  = "tenant"
   val WEAVIATE_VECTOR_COLUMN_CONF: String  = "vector"
+  val WEAVIATE_VECTORS_COLUMN_PREFIX: String  = "vectors:"
+  val WEAVIATE_MULTIVECTORS_COLUMN_PREFIX: String  = "multivectors:"
   val WEAVIATE_ID_COLUMN_CONF: String  = "id"
   val WEAVIATE_RETRIES_CONF: String = "retries"
   val WEAVIATE_RETRIES_BACKOFF_CONF: String = "retriesBackoff"

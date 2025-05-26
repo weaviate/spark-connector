@@ -21,6 +21,9 @@ class SparkIntegrationTest
   before {
     val exit_code = WeaviateDocker.start()
     assert(exit_code == 0)
+
+    val ready = WeaviateDocker.checkReadyEndpoint()
+    assert(ready)
   }
 
   after {
@@ -831,6 +834,104 @@ class SparkIntegrationTest
 
     assert(exception.getMessage.contains("Connection refused"))
   }
+
+  test("Article with Spark provided embeddings") {
+    WeaviateDocker.createClass()
+    import spark.implicits._
+    val articles = Seq(ArticleWithEmbedding("Title", "Some content", 3, Array(0.111f, 0.222f))).toDF
+
+    articles.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("className", "Article")
+      .option("vector", "embedding")
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("Article")
+      .withVector()
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting Articles" + results.getError.getMessages)
+    }
+
+    assert(results.getResult.get(0).getVector sameElements Array(0.111f, 0.222f))
+    val props = results.getResult.get(0).getProperties
+    assert(props.get("title") == "Title")
+    assert(props.get("content") == "Some content")
+    assert(props.get("wordCount") == 3)
+    assert(results.getResult.size == 1)
+    WeaviateDocker.deleteClass()
+  }
+
+  test("RegularVectors with Spark provided regular named vectors") {
+    WeaviateDocker.createRegularVectorsClass()
+    import spark.implicits._
+    val regularVectors = Seq(RegularVectorsWithVectors("Title", Array(0.111f, 0.222f))).toDF
+
+    regularVectors.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("grpc:host", "localhost:50051")
+      .option("className", "RegularVectors")
+      .option("vectors:regular", "embedding")
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("RegularVectors")
+      .withVector()
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting RegularVectors" + results.getError.getMessages)
+    }
+
+    assert(results.getResult.size == 1)
+    assert(results.getResult.get(0).getVectors.get("regular") sameElements Array(0.111f, 0.222f))
+    val props = results.getResult.get(0).getProperties
+    assert(props.get("title") == "Title")
+    WeaviateDocker.deleteRegularVectorsClass()
+  }
+
+  test("MultiVectors with Spark provided named vectors") {
+    WeaviateDocker.createMultiVectorsClass()
+    import spark.implicits._
+    val namedVectors = Seq(MultiVectorWithAllVectors("Title", Array(0.111f, 0.222f), Array(Array(0.1f, 0.2f), Array(0.3f, 0.4f)))).toDF
+
+    namedVectors.write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("grpc:host", "localhost:50051")
+      .option("className", "MultiVectors")
+      .option("vectors:regular", "regularVector")
+      .option("multiVectors:colbert", "multiVector")
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("MultiVectors")
+      .withVector()
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting MultiVectors" + results.getError.getMessages)
+    }
+
+    assert(results.getResult.size == 1)
+    assert(results.getResult.get(0).getVectors.get("regular") sameElements Array(0.111f, 0.222f))
+    assert(results.getResult.get(0).getMultiVectors.get("colbert").length == 2)
+    assert(results.getResult.get(0).getMultiVectors.get("colbert")(0) sameElements Array(0.1f, 0.2f))
+    assert(results.getResult.get(0).getMultiVectors.get("colbert")(1) sameElements Array(0.3f, 0.4f))
+    val props = results.getResult.get(0).getProperties
+    assert(props.get("title") == "Title")
+    WeaviateDocker.deleteMultiVectorsClass()
+  }
 }
 
 class SparkIntegrationTestsOpenAI
@@ -843,6 +944,9 @@ class SparkIntegrationTestsOpenAI
   before {
     val exit_code = WeaviateDocker.start(vectorizerModule = "text2vec-openai")
     assert(exit_code == 0)
+
+    val ready = WeaviateDocker.checkReadyEndpoint()
+    assert(ready)
   }
 
   after {
