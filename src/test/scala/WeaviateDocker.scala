@@ -9,9 +9,8 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.sys.process._
 
-import java.net.http.{HttpClient, HttpRequest, HttpResponse}
-import java.net.URI
 import scala.util.Try
+import java.net.{URL, HttpURLConnection}
 
 object WeaviateDocker {
   val options: CaseInsensitiveStringMap =
@@ -49,14 +48,18 @@ semitechnologies/weaviate:$weaviateVersion"""
   }
 
   def checkReadyEndpoint(): Boolean = {
-    val client = HttpClient.newHttpClient()
-    val readyUri = URI.create(s"http://localhost:8080/v1/.well-known/ready")
-
     def checkReadinessProbe: Boolean = {
       Try {
-        val request = HttpRequest.newBuilder().uri(readyUri).GET().build()
-        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-        response.statusCode() == 200
+        val url = new URL("http://localhost:8080/v1/.well-known/ready")
+        val connection = url.openConnection().asInstanceOf[HttpURLConnection]
+        try {
+          connection.setRequestMethod("GET")
+          connection.setConnectTimeout(1000) // 1s timeout
+          connection.setReadTimeout(1000)
+          connection.getResponseCode == 200
+        } finally {
+          connection.disconnect()
+        }
       }.getOrElse(false)
     }
 
