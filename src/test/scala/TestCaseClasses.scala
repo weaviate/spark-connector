@@ -40,3 +40,6 @@ case class RegularVectorsWithVectors(title: String, embedding: Array[Float])
 case class MultiVectorWithAllVectors(title: String, regularVector: Array[Float], multiVector: Array[Array[Float]])
 
 case class MixedVectorWithAllVectors(title: String, regularVector: Array[Float], embedding: Array[Float], multiVector: Array[Array[Float]], colbert: Array[Array[Float]])
+
+case class GeoCoordinates(latitude: Double, longitude: Double)
+case class GeoWithCoordinates(title: String, geo: GeoCoordinates)

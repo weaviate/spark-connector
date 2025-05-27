@@ -1,12 +1,16 @@
 package io.weaviate.spark
 
+import com.google.gson.reflect.TypeToken
+import com.google.gson.{Gson, JsonSyntaxException}
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
 import org.apache.spark.sql.types._
 import io.weaviate.client.v1.data.model.WeaviateObject
+import io.weaviate.client.v1.schema.model.WeaviateClass
 import org.apache.spark.sql.catalyst.util.{ArrayData, GenericArrayData}
 
+import java.util.{Map => JavaMap}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
@@ -17,9 +21,10 @@ case class WeaviateCommitMessage(msg: String) extends WriterCommitMessage
 case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructType)
   extends DataWriter[InternalRow] with Serializable with Logging {
   var batch = mutable.Map[String, WeaviateObject]()
+  private val weaviateClass = weaviateOptions.getWeaviateClass()
 
   override def write(record: InternalRow): Unit = {
-    val weaviateObject = buildWeaviateObject(record)
+    val weaviateObject = buildWeaviateObject(record, weaviateClass)
     batch += (weaviateObject.getId -> weaviateObject)
 
     if (batch.size >= weaviateOptions.batchSize) writeBatch()
@@ -74,7 +79,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     }
   }
 
-  private[spark] def buildWeaviateObject(record: InternalRow): WeaviateObject = {
+  private[spark] def buildWeaviateObject(record: InternalRow, weaviateClass: WeaviateClass = null): WeaviateObject = {
     var builder = WeaviateObject.builder.className(weaviateOptions.className)
     if (weaviateOptions.tenant != null) {
       builder = builder.tenant(weaviateOptions.tenant)
@@ -101,7 +106,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
           multiVectors += (weaviateOptions.multiVectors(key) -> multiVector)
         }
         case weaviateOptions.id => builder = builder.id(record.getString(field._2))
-        case _ => properties(field._1.name) = getValueFromField(field._2, record, field._1.dataType, false)
+        case _ => properties(field._1.name) = getPropertyValue(field._2, record, field._1.dataType, false, field._1.name, weaviateClass)
       }
     )
     if (weaviateOptions.id == null) {
@@ -115,6 +120,35 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       builder.multiVectors(multiVectors.map { case (key, multiVector) => key -> multiVector.map { vec => { vec.map(Float.box) }} }.toMap.asJava)
     }
     builder.properties(properties.asJava).build
+  }
+
+  def getPropertyValue(index: Int, record: InternalRow, dataType: DataType, parseObjectArrayItem: Boolean, propertyName: String, weaviateClass: WeaviateClass): AnyRef = {
+    val valueFromField = getValueFromField(index, record, dataType, parseObjectArrayItem)
+    if (weaviateClass != null) {
+      var dt = ""
+      weaviateClass.getProperties.forEach(p => {
+        if (p.getName == propertyName) {
+          // we are just looking for geoCoordinates or phoneNumber type
+          dt = p.getDataType.get(0)
+        }
+      })
+      if ((dt == "geoCoordinates" || dt == "phoneNumber") && valueFromField.isInstanceOf[String]) {
+        return jsonToJavaMap(propertyName, valueFromField.toString).get
+      }
+    }
+    valueFromField
+  }
+
+  def jsonToJavaMap(propertyName: String, jsonString: String): Option[JavaMap[String, Object]] = {
+    try {
+      val gson = new Gson()
+      val mapType = new TypeToken[JavaMap[String, Object]]() {}.getType
+      Some(gson.fromJson(jsonString, mapType))
+    } catch {
+      case e: JsonSyntaxException =>
+        throw SparkDataTypeNotSupported(
+          s"Error occured during parsing of $propertyName value: $jsonString")
+    }
   }
 
   def getValueFromField(index: Int, record: InternalRow, dataType: DataType, parseObjectArrayItem: Boolean): AnyRef = {
