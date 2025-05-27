@@ -1,6 +1,6 @@
 package io.weaviate.spark
 
-import org.apache.spark.sql.catalyst.expressions.{GenericInternalRow, Literal, UnsafeArrayData}
+import org.apache.spark.sql.catalyst.expressions.{GenericInternalRow, UnsafeArrayData}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.types.{DataType, DataTypes, Metadata, StringType, StructField, StructType}
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
@@ -256,6 +256,38 @@ class TestWeaviateDataWriter extends AnyFunSuite {
     assert(weaviateObject.getMultiVectors.get("colbert").length == 2)
     assert(weaviateObject.getMultiVectors.get("colbert")(0).sameElements(colbert(0)))
     assert(weaviateObject.getMultiVectors.get("colbert")(1).sameElements(colbert(1)))
+    assert(weaviateObject.getTenant == null)
+  }
+
+  test("Test Build Weaviate Object with geo coordinates") {
+    val options: CaseInsensitiveStringMap =
+      new CaseInsensitiveStringMap(Map(
+        "scheme" -> "http", "host" -> "localhost",
+        "className" -> "GeoClass", "id" -> "id").asJava)
+    val weaviateOptions: WeaviateOptions = new WeaviateOptions(options)
+    val structFields = Array[StructField](
+      StructField("id", DataTypes.StringType, true, Metadata.empty),
+      StructField("title", DataTypes.StringType, true, Metadata.empty),
+      StructField("geo", DataTypes.createStructType(
+        Array(
+          DataTypes.createStructField("latitude", DataTypes.DoubleType, false),
+          DataTypes.createStructField("longitude", DataTypes.DoubleType, false)
+        )
+      ), true, Metadata.empty),
+    )
+    val schema = StructType(structFields)
+    val dw = WeaviateDataWriter(weaviateOptions, schema)
+    val uuid = java.util.UUID.randomUUID.toString
+    val title = UTF8String.fromString("title")
+    val latitude = 52.3932696
+    val longitude = 4.8374263
+    val geoLocationRow = new GenericInternalRow(Array[Any](latitude, longitude))
+    val row = new GenericInternalRow(Array[Any](UTF8String.fromString(uuid), title, geoLocationRow))
+    val weaviateObject = dw.buildWeaviateObject(row)
+
+    assert(weaviateObject.getId == uuid)
+    assert(weaviateObject.getProperties.get("title") == "title")
+    assert(weaviateObject.getProperties.get("geo") != null)
     assert(weaviateObject.getTenant == null)
   }
 }

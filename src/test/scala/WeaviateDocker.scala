@@ -156,6 +156,20 @@ semitechnologies/weaviate:$weaviateVersion"""
     createClass("Authors", "", properties)
   }
 
+  def createGeoClass(): Unit = {
+    val properties = Seq(
+      Property.builder()
+        .name("title")
+        .dataType(List[String](DataType.TEXT).asJava)
+        .build(),
+      Property.builder()
+        .name("geo")
+        .dataType(List[String](DataType.GEO_COORDINATES).asJava)
+        .build()
+    )
+    createClass("GeoClass", "", properties)
+  }
+
   def createRegularVectorsClass(): Unit = {
     createNamedVectorsClass("RegularVectors", false)
   }
@@ -241,6 +255,10 @@ semitechnologies/weaviate:$weaviateVersion"""
 
   def deleteMixedVectorsClass(): Unit = {
     deleteClass("MixedVectors")
+  }
+
+  def deleteGeoClass(): Unit = {
+    deleteClass("GeoClass")
   }
 
   private def createClass(className: String, description: String, properties: Seq[Property], vectorConfig: Option[Map[String, WeaviateClass.VectorConfig]] = None): Unit = {

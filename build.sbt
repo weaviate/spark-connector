@@ -19,6 +19,7 @@ lazy val grpcNettyShadedVersion = "1.72.0"
 lazy val weaviateClientVersion = "5.2.1"
 lazy val scalaCollectionCompatVersion = "2.13.0"
 lazy val scalatestVersion = "3.2.19"
+lazy val gsonVersion = "2.13.1"
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % scalatestVersion % "test",
   "org.apache.spark" %% "spark-core" % sparkVersion % "provided,test",
@@ -26,7 +27,8 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-catalyst" % sparkVersion % "provided,test",
   "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
   "io.weaviate" % "client" % weaviateClientVersion,
-  "io.grpc" % "grpc-netty-shaded" % grpcNettyShadedVersion
+  "io.grpc" % "grpc-netty-shaded" % grpcNettyShadedVersion,
+  "com.google.code.gson" % "gson" % gsonVersion
 )
 
 assemblyShadeRules in assembly := Seq(

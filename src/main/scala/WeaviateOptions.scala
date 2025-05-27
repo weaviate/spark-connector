@@ -7,6 +7,7 @@ import io.weaviate.client.{Config, WeaviateAuthClient, WeaviateClient}
 
 import scala.collection.JavaConverters._
 import io.weaviate.client.v1.data.replication.model.ConsistencyLevel
+import io.weaviate.client.v1.schema.model.WeaviateClass
 
 import scala.util.Properties
 
@@ -88,6 +89,11 @@ class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
     }
 
     client
+  }
+
+  def getWeaviateClass(): WeaviateClass = {
+    val res = getClient().schema().classGetter().withClassName(className).run()
+    if (!res.hasErrors) res.getResult else null
   }
 }
 

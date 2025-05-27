@@ -975,6 +975,40 @@ class SparkIntegrationTest
     assert(props.get("title") == "Mixed title")
     WeaviateDocker.deleteMixedVectorsClass()
   }
+
+  test("Geo coordinates") {
+    WeaviateDocker.createGeoClass()
+    import spark.implicits._
+    import org.apache.spark.sql.functions._
+
+    val dataFrame = Seq(GeoWithCoordinates("Title1", GeoCoordinates(latitude = 52.3932696, longitude = 4.8374263))).toDF
+
+    dataFrame.printSchema()
+    dataFrame.show(truncate = false)
+
+    dataFrame.withColumn("geo", to_json(col("geo"))).write
+      .format("io.weaviate.spark.Weaviate")
+      .option("scheme", "http")
+      .option("host", "localhost:8080")
+      .option("grpc:host", "localhost:50051")
+      .option("className", "GeoClass")
+      .mode("append")
+      .save()
+
+    val results = client.data().objectsGetter()
+      .withClassName("GeoClass")
+      .run()
+
+    if (results.hasErrors) {
+      println("Error getting GeoClass" + results.getError.getMessages)
+    }
+
+    assert(results.getResult.size == 1)
+    val props = results.getResult.get(0).getProperties
+    assert(props.get("title") == "Title1")
+    assert(props.get("geo") != null)
+    WeaviateDocker.deleteGeoClass()
+  }
 }
 
 class SparkIntegrationTestsOpenAI
