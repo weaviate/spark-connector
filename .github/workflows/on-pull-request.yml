@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         distribution: [ 'zulu', 'temurin' ]
-        java: [ '8', '11' ]
+        java: [ '17', '21' ]
         os: [ 'ubuntu-latest' ]
     steps:
       - uses: actions/checkout@v4
@@ -34,7 +34,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 11
+          java-version: 17
       - uses: sbt/setup-sbt@v1
       - name: Get release version
         run: |
@@ -43,7 +43,6 @@ jobs:
       - name: Create jar with all dependencies included
         run: |
           sbt +assembly
-          test -f ./target/scala-2.12/spark-connector-assembly-${{ env.version }}.jar
           test -f ./target/scala-2.13/spark-connector-assembly-${{ env.version }}.jar
       - uses: actions/setup-python@v4
         with:

@@ -9,7 +9,13 @@ byov_schema = {
             "dataType": ["text"],
             "name": "title"
         },
-    ]
+    ],
+    "vectorConfig": {
+        "default": {
+            "vectorizer": {"none": {}},
+            "vectorIndexType": "hnsw"
+        }
+    }
 }
 
 

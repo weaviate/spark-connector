@@ -32,7 +32,7 @@ def get_connector_version():
 
 
 connector_version = os.environ.get("CONNECTOR_VERSION", get_connector_version())
-scala_version = os.environ.get("SCALA_VERSION", "2.12")
+scala_version = os.environ.get("SCALA_VERSION", "2.13")
 weaviate_version = os.environ.get("WEAVIATE_VERSION", "1.30.3")
 spark_connector_jar_path = os.environ.get(
     "CONNECTOR_JAR_PATH", f"target/scala-{scala_version}/spark-connector-assembly-{connector_version}.jar"
@@ -46,7 +46,7 @@ def spark():
         .appName("Weaviate Pyspark Tests")
         .master('local')
         .config("spark.jars", spark_connector_jar_path)
-        .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.0")
+        .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.13:4.0.1")
         .config("spark.driver.host", "127.0.0.1")
         .getOrCreate()
     )
@@ -118,7 +118,10 @@ def test_string_arrays(spark: SparkSession, weaviate_client: weaviate.Client):
     df = spark.createDataFrame(data=articles, schema=spark_schema)
     df.write.format("io.weaviate.spark.Weaviate") \
         .option("scheme", "http") \
-        .option("host", "localhost:8080") \
+        .option("host", "localhost") \
+        .option("port", "8080") \
+        .option("grpc:host", "localhost") \
+        .option("grpc:port", "50051") \
         .option("className", "Article") \
         .mode("append").save()
 
@@ -165,7 +168,10 @@ def test_null_values(spark: SparkSession, weaviate_client: weaviate.Client):
     df = spark.createDataFrame(data=articles, schema=spark_schema)
     df.write.format("io.weaviate.spark.Weaviate") \
         .option("scheme", "http") \
-        .option("host", "localhost:8080") \
+        .option("host", "localhost") \
+        .option("port", "8080") \
+        .option("grpc:host", "localhost") \
+        .option("grpc:port", "50051") \
         .option("className", "Article") \
         .mode("append").save()
 
@@ -199,7 +205,10 @@ def test_id_column(spark: SparkSession, weaviate_client: weaviate.Client):
     df = spark.createDataFrame(data=articles, schema=spark_schema)
     df.write.format("io.weaviate.spark.Weaviate") \
         .option("scheme", "http") \
-        .option("host", "localhost:8080") \
+        .option("host", "localhost") \
+        .option("port", "8080") \
+        .option("grpc:host", "localhost") \
+        .option("grpc:port", "50051") \
         .option("className", "Article") \
         .option("id", "id") \
         .mode("append").save()
@@ -214,7 +223,10 @@ def test_id_column(spark: SparkSession, weaviate_client: weaviate.Client):
         df = spark.createDataFrame(data=articles, schema=spark_schema)
         df.write.format("io.weaviate.spark.Weaviate") \
             .option("scheme", "http") \
-            .option("host", "localhost:8080") \
+            .option("host", "localhost") \
+            .option("port", "8080") \
+            .option("grpc:host", "localhost") \
+            .option("grpc:port", "50051") \
             .option("className", "Article") \
             .option("id", "id") \
             .mode("append").save()
@@ -272,7 +284,10 @@ def test_large_movie_dataset(spark: SparkSession, weaviate_client: weaviate.Clie
     df = spark.createDataFrame(data=movies, schema=movie_spark_schema)
     df.write.format("io.weaviate.spark.Weaviate") \
         .option("scheme", "http") \
-        .option("host", "localhost:8080") \
+        .option("host", "localhost") \
+        .option("port", "8080") \
+        .option("grpc:host", "localhost") \
+        .option("grpc:port", "50051") \
         .option("className", "Movies") \
         .mode("append").save()
 
@@ -335,7 +350,10 @@ def test_kafka_streaming(spark: SparkSession, weaviate_client: weaviate.Client, 
         df.writeStream
         .format("io.weaviate.spark.Weaviate")
         .option("scheme", "http")
-        .option("host", "localhost:8080")
+        .option("host", "localhost")
+        .option("port", "8080")
+        .option("grpc:host", "localhost")
+        .option("grpc:port", "50051")
         .option("className", "Article")
         .option("checkpointLocation", tmp_path.absolute())
         .outputMode("append")
@@ -372,7 +390,10 @@ def test_kafka_streaming_event_data(spark: SparkSession, weaviate_client: weavia
         df.writeStream
         .format("io.weaviate.spark.Weaviate")
         .option("scheme", "http")
-        .option("host", "localhost:8080")
+        .option("host", "localhost")
+        .option("port", "8080")
+        .option("grpc:host", "localhost")
+        .option("grpc:port", "50051")
         .option("className", "Event")
         .option("checkpointLocation", tmp_path.absolute())
         .option("id", "id_column")
@@ -410,8 +431,10 @@ def test_kafka_person_data(spark: SparkSession, weaviate_client: weaviate.Client
         df.writeStream
         .format("io.weaviate.spark.Weaviate")
         .option("scheme", "http")
-        .option("host", "localhost:8080")
-        .option("grpc:host", "localhost:50051")
+        .option("host", "localhost")
+        .option("port", "8080")
+        .option("grpc:host", "localhost")
+        .option("grpc:port", "50051")
         .option("className", "Person")
         .option("checkpointLocation", tmp_path.absolute())
         .option("id", "id_column")
@@ -423,6 +446,7 @@ def test_kafka_person_data(spark: SparkSession, weaviate_client: weaviate.Client
     person_uuids = set([e["id_column"] for e in people])
     assert result["data"]["Aggregate"]["Person"][0]["meta"]["count"] == len(person_uuids)
 
+@pytest.mark.skip(reason="Uncomment after migration to python v4")
 def test_kafka_streaming_byov_data(spark: SparkSession, weaviate_client: weaviate.Client, tmp_path, kafka_host):
     weaviate_client.schema.create_class(byov_schema)
     producer = KafkaProducer(bootstrap_servers=[kafka_host],
@@ -449,7 +473,10 @@ def test_kafka_streaming_byov_data(spark: SparkSession, weaviate_client: weaviat
         df.writeStream
         .format("io.weaviate.spark.Weaviate")
         .option("scheme", "http")
-        .option("host", "localhost:8080")
+        .option("host", "localhost")
+        .option("port", "8080")
+        .option("grpc:host", "localhost")
+        .option("grpc:port", "50051")
         .option("className", "BringYourOwnVector")
         .option("checkpointLocation", tmp_path.absolute())
         .option("id", "id_column")

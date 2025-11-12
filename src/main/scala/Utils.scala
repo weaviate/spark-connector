@@ -1,13 +1,13 @@
 package io.weaviate.spark
 
-import io.weaviate.client.v1.schema.model.Property
+import io.weaviate.client6.v1.api.collections.Property
 import org.apache.spark.sql.types.{DataType, DataTypes, StructField, StructType}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import java.util
 
 object Utils {
-  def weaviateToSparkDatatype(datatype: util.List[String], nestedProperties: util.List[Property.NestedProperty]): DataType = {
+  def weaviateToSparkDatatype(datatype: util.List[String], nestedProperties: util.List[Property]): DataType = {
     datatype.get(0) match {
       case "string" => DataTypes.StringType
       case "string[]" => DataTypes.createArrayType(DataTypes.StringType)
@@ -27,9 +27,9 @@ object Utils {
     }
   }
 
-  private def createStructType(nestedProperties: util.List[Property.NestedProperty]): StructType = {
+  private def createStructType(nestedProperties: util.List[Property]): StructType = {
     val fields = nestedProperties.asScala.map(prop => {
-      StructField(name = prop.getName, dataType = weaviateToSparkDatatype(prop.getDataType, prop.getNestedProperties))
+      StructField(name = prop.propertyName(), dataType = weaviateToSparkDatatype(prop.dataTypes(), prop.nestedProperties()))
     }).asJava
 
     DataTypes.createStructType(fields)

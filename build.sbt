@@ -2,9 +2,9 @@ import ReleaseTransformations._
 
 resolvers += Resolver.mavenLocal
 
-ThisBuild / scalaVersion := "2.12.18"
+ThisBuild / scalaVersion := "2.13.17"
 
-crossScalaVersions := Seq("2.12.18", "2.13.12")
+javaOptions ++= Seq("-target", "17", "-source", "17")
 
 lazy val root = (project in file("."))
   .settings(
@@ -14,9 +14,9 @@ lazy val root = (project in file("."))
 
 ThisBuild / scalafixDependencies += "org.scalalint" %% "rules" % "0.2.1" % "runtime"
 
-lazy val sparkVersion = "3.5.5"
+lazy val sparkVersion = "4.0.1"
 lazy val grpcNettyShadedVersion = "1.72.0"
-lazy val weaviateClientVersion = "5.2.1"
+lazy val weaviateClient6Version = "6.0.0-M2"
 lazy val scalaCollectionCompatVersion = "2.13.0"
 lazy val scalatestVersion = "3.2.19"
 lazy val gsonVersion = "2.13.1"
@@ -26,7 +26,7 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-sql" % sparkVersion % "provided,test",
   "org.apache.spark" %% "spark-catalyst" % sparkVersion % "provided,test",
   "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
-  "io.weaviate" % "client" % weaviateClientVersion,
+  "io.weaviate" % "client6" % weaviateClient6Version,
   "io.grpc" % "grpc-netty-shaded" % grpcNettyShadedVersion,
   "com.google.code.gson" % "gson" % gsonVersion
 )

@@ -1,22 +1,25 @@
 package io.weaviate.spark
 
+import io.weaviate.client6.v1.api.collections.query.FetchObjects
 import org.apache.spark.sql.execution.streaming.MemoryStream
 import org.apache.spark.sql.{AnalysisException, DataFrame, Encoder, Encoders}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
-import io.weaviate.client.v1.schema.model.Property
+import io.weaviate.client6.v1.api.collections.{Property}
+import io.weaviate.client6.v1.internal.ObjectBuilder
 import org.apache.spark.SparkException
 
+import java.util.function.Function
+import java.util.{List => JList}
 import scala.jdk.CollectionConverters._
 import scala.reflect.io.Directory
-
 
 class SparkIntegrationTest
   extends AnyFunSuite
     with SparkSessionTestWrapper
     with BeforeAndAfter {
 
-  val client = WeaviateDocker.client
+  lazy val client = WeaviateDocker.client
 
   before {
     val exit_code = WeaviateDocker.start()
@@ -38,24 +41,22 @@ class SparkIntegrationTest
     articles.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
+      .option("host", "localhost")
+      .option("port", "8080")
       .option("className", "Article")
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName("Article")
-      .run()
-
-    if (results.hasErrors) {
-      println("Error getting Articles" + results.getError.getMessages)
+    val results = client.collections.use("Article").query.fetchObjects().objects()
+    if (results.isEmpty) {
+      println("No Articles found")
     }
 
-    val props = results.getResult.get(0).getProperties
+    val props = results.get(0).properties()
     assert(props.get("title") == "Sam")
     assert(props.get("content") == "Sam and Sam")
     assert(props.get("wordCount") == 3)
-    assert(results.getResult.size == 1)
+    assert(results.size == 1)
     WeaviateDocker.deleteClass()
   }
 
@@ -67,21 +68,19 @@ class SparkIntegrationTest
     articles.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
+      .option("host", "localhost")
+      .option("port", "8080")
       .option("className", "Article")
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName("Article")
-      .run()
-
-    if (results.hasErrors) {
-      println("Error getting Articles" + results.getError.getMessages)
+    val results = client.collections.use("Article").query.fetchObjects().objects()
+    if (results.isEmpty) {
+      println("No Articles found")
     }
 
-    val props = results.getResult.get(0).getProperties
-    assert(results.getResult.size == 1)
+    val props = results.get(0).properties()
+    assert(results.size == 1)
     assert(props.get("title") == "")
     assert(props.get("content") == "Sam and Sam")
     assert(props.get("wordCount") == 3)
@@ -96,21 +95,19 @@ class SparkIntegrationTest
     articles.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
+      .option("host", "localhost")
+      .option("port", "8080")
       .option("className", "Article")
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName("Article")
-      .run()
-
-    if (results.hasErrors) {
-      println("Error getting Articles" + results.getError.getMessages)
+    val results = client.collections.use("Article").query.fetchObjects().objects()
+    if (results.isEmpty) {
+      println("No Articles found")
     }
 
-    val props = results.getResult.get(0).getProperties
-    assert(results.getResult.size == 1)
+    val props = results.get(0).properties()
+    assert(results.size == 1)
     assert(props.get("title") == "Sam")
     assert(props.get("content") == "")
     assert(props.get("wordCount") == 3)
@@ -119,18 +116,9 @@ class SparkIntegrationTest
 
   test("Article with strings and int Streaming Write") {
     WeaviateDocker.createClass(
-      Property.builder()
-        .dataType(List[String]("string[]").asJava)
-        .name("keywords")
-        .build(),
-      Property.builder()
-        .dataType(List[String]("text").asJava)
-        .name("customId")
-        .build(),
-      Property.builder()
-        .dataType(List[String]("boolean").asJava)
-        .name("myBool")
-        .build(),
+      Property.textArray("keywords"),
+      Property.text("customId"),
+      Property.bool("myBool"),
     )
     import spark.implicits._
     implicit val articleEncoder: Encoder[ArticleWithAll] = Encoders.product[ArticleWithAll]
@@ -143,7 +131,8 @@ class SparkIntegrationTest
     val streamingWrite = inputStreamDF.writeStream
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
+      .option("host", "localhost")
+      .option("port", "8080")
       .option("batchSize", 6)
       .option("className", "Article")
       .option("checkpointLocation", path.toAbsolutePath.toString)
@@ -153,19 +142,16 @@ class SparkIntegrationTest
     inputStream.addData(articles)
     streamingWrite.processAllAvailable()
 
-    val results = client.data().objectsGetter()
-      .withClassName("Article")
-      .run()
-
-    if (results.hasErrors) {
-      println("Error getting Articles" + results.getError.getMessages)
+    val results = client.collections.use("Article").query.fetchObjects().objects()
+    if (results.isEmpty) {
+      println("Found no Articles")
     }
 
-    val props = results.getResult.get(0).getProperties
+    val props = results.get(0).properties()
     assert(props.get("title") == "Sam")
     assert(props.get("content") == "Sam and Sam")
     assert(props.get("wordCount") == 3)
-    assert(results.getResult.size == 20)
+    assert(results.size == 20)
     WeaviateDocker.deleteClass()
     val dir = new Directory(path.toFile)
     dir.deleteRecursively()
@@ -191,40 +177,32 @@ class SparkIntegrationTest
 
     for (c <- cases) {
       println(s"Running test case: ${c.name}")
-      WeaviateDocker.createClass(
-        Property.builder()
-          .dataType(List[String](c.weaviateDataType).asJava)
-          .name(c.name)
-          .build()
-      )
+      WeaviateDocker.createClass(new Property.Builder(c.name, c.weaviateDataType).build())
 
       c.df.write
         .format("io.weaviate.spark.Weaviate")
         .option("scheme", "http")
-        .option("host", "localhost:8080")
+        .option("host", "localhost")
+        .option("port", "8080")
         .option("className", "Article")
         .mode("append")
         .save()
-      val results = client.data().objectsGetter()
-        .withClassName("Article")
-        .run()
+      val results = client.collections.use("Article").query.fetchObjects().objects()
 
-      if (results.hasErrors) {
-        println("Error getting Articles" + results.getError.getMessages)
+      if (results.isEmpty) {
+        println("Found no Articles")
       }
 
-      assert(results.getResult.size == 1)
-      val props = results.getResult.get(0).getProperties
+      assert(results.size == 1)
+      val props = results.get(0).properties()
       assert(props.get(c.name) == c.expected)
       WeaviateDocker.deleteClass()
     }
   }
 
   test("Article with strings and date") {
-    WeaviateDocker.createClass(Property.builder()
-      .dataType(List[String]("date").asJava)
-      .name("date")
-      .build()
+    WeaviateDocker.createClass(
+      Property.date("date")
     )
     import spark.implicits._
     val javaDates = Seq(
@@ -237,46 +215,43 @@ class SparkIntegrationTest
     articles.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
+      .option("host", "localhost")
+      .option("port", "8080")
       .option("className", "Article")
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName("Article")
-      .run()
+    val results = client.collections.use("Article").query.fetchObjects().objects()
 
-    if (results.hasErrors) {
-      println("Error getting Articles" + results.getError.getMessages)
+    if (results.isEmpty) {
+      println("Found no Articles")
     }
 
-    val objects = results.getResult
+    val objects = results
       .asScala
-      .sortBy(_.getProperties.get("date").asInstanceOf[String])
+      .sortBy(_.properties().get("date").asInstanceOf[java.time.OffsetDateTime])
 
     assert(objects.size == 3)
 
     val expectedDates = Seq(
-      "1969-12-31T00:00:00Z",
-      "1970-01-01T00:00:00Z",
-      "2022-11-18T00:00:00Z",
+      "1969-12-31T00:00Z",
+      "1970-01-01T00:00Z",
+      "2022-11-18T00:00Z",
     )
     objects.zip(expectedDates).foreach {
       case (obj, expectedDate) =>
-        val props = obj.getProperties
+        val props = obj.properties()
         assert(props.get("title") == "Sam")
         assert(props.get("content") == "Sam and Sam")
         assert(props.get("wordCount") == 3)
-        assert(props.get("date") == expectedDate)
+        assert(props.get("date").toString == expectedDate)
     }
     WeaviateDocker.deleteClass()
   }
 
   test("Article with string array") {
-    WeaviateDocker.createClass(Property.builder()
-      .dataType(List[String]("string[]").asJava)
-      .name("keywords")
-      .build()
+    WeaviateDocker.createClass(
+      Property.textArray("keywords")
     )
     import spark.implicits._
     val articles = Seq(ArticleWithStringArray("Sam", "Sam and Sam", 3, Array("yo", "hey"))).toDF
@@ -284,21 +259,19 @@ class SparkIntegrationTest
     articles.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
+      .option("host", "localhost")
+      .option("port", "8080")
       .option("className", "Article")
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName("Article")
-      .run()
-
-    if (results.hasErrors) {
-      println("Error getting Articles" + results.getError.getMessages)
+    val results = client.collections.use("Article").query.fetchObjects().objects()
+    if (results.isEmpty) {
+      println("Found no Articles")
     }
 
-    assert(results.getResult.size == 1)
-    val props = results.getResult.get(0).getProperties
+    assert(results.size == 1)
+    val props = results.get(0).properties()
     assert(props.get("title") == "Sam")
     assert(props.get("content") == "Sam and Sam")
     assert(props.get("wordCount") == 3)
@@ -307,10 +280,8 @@ class SparkIntegrationTest
   }
 
   test("Article with empty string array") {
-    WeaviateDocker.createClass(Property.builder()
-      .dataType(List[String]("string[]").asJava)
-      .name("keywords")
-      .build()
+    WeaviateDocker.createClass(
+      Property.textArray("keywords")
     )
     import spark.implicits._
     val articles = Seq(ArticleWithStringArray("Sam", "Sam and Sam", 3, Array())).toDF
@@ -318,21 +289,19 @@ class SparkIntegrationTest
     articles.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
+      .option("host", "localhost")
+      .option("port", "8080")
       .option("className", "Article")
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName("Article")
-      .run()
-
-    if (results.hasErrors) {
-      println("Error getting Articles" + results.getError.getMessages)
+    val results = client.collections.use("Article").query.fetchObjects().objects()
+    if (results.isEmpty) {
+      println("Found no Articles")
     }
 
-    assert(results.getResult.size == 1)
-    val props = results.getResult.get(0).getProperties
+    assert(results.size == 1)
+    val props = results.get(0).properties()
     assert(props.get("title") == "Sam")
     assert(props.get("content") == "Sam and Sam")
     assert(props.get("wordCount") == 3)
@@ -341,10 +310,8 @@ class SparkIntegrationTest
   }
 
   test("Article with double array") {
-    WeaviateDocker.createClass(Property.builder()
-      .dataType(List[String]("number[]").asJava)
-      .name("doubles")
-      .build()
+    WeaviateDocker.createClass(
+      Property.numberArray("doubles")
     )
     import spark.implicits._
     val articles = Seq(ArticleWithDoubleArray("Sam", "Sam and Sam", 3, Array(1.0, 2.0, 3.0))).toDF
@@ -352,21 +319,19 @@ class SparkIntegrationTest
     articles.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
+      .option("host", "localhost")
+      .option("port", "8080")
       .option("className", "Article")
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName("Article")
-      .run()
-
-    if (results.hasErrors) {
-      println("Error getting Articles" + results.getError.getMessages)
+    val results = client.collections.use("Article").query.fetchObjects().objects()
+    if (results.isEmpty) {
+      println("Found no Articles")
     }
 
-    assert(results.getResult.size == 1)
-    val props = results.getResult.get(0).getProperties
+    assert(results.size == 1)
+    val props = results.get(0).properties()
     assert(props.get("title") == "Sam")
     assert(props.get("content") == "Sam and Sam")
     assert(props.get("wordCount") == 3)
@@ -375,10 +340,8 @@ class SparkIntegrationTest
   }
 
   test("Article with int array") {
-    WeaviateDocker.createClass(Property.builder()
-      .dataType(List[String]("int[]").asJava)
-      .name("ints")
-      .build()
+    WeaviateDocker.createClass(
+      Property.integerArray("ints")
     )
     import spark.implicits._
     val articles = Seq(ArticleWithIntArray("Sam", "Sam and Sam", 3, Array(1, 2, 3))).toDF
@@ -386,25 +349,23 @@ class SparkIntegrationTest
     articles.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
+      .option("host", "localhost")
+      .option("port", "8080")
       .option("className", "Article")
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName("Article")
-      .run()
-
-    if (results.hasErrors) {
-      println("Error getting Articles" + results.getError.getMessages)
+    val results = client.collections.use("Article").query.fetchObjects().objects()
+    if (results.isEmpty) {
+      println("Found no Articles")
     }
 
-    assert(results.getResult.size == 1)
-    val props = results.getResult.get(0).getProperties
+    assert(results.size == 1)
+    val props = results.get(0).properties()
     assert(props.get("title") == "Sam")
     assert(props.get("content") == "Sam and Sam")
     assert(props.get("wordCount") == 3)
-    assert(props.get("ints") == List(1.0, 2.0, 3.0).asJava) // TODO: why are these coming back as dubs?
+    assert(props.get("ints") == List[Long](1l, 2l, 3l).asJava) // TODO: why are these coming back as dubs?
     WeaviateDocker.deleteClass()
   }
 
@@ -416,25 +377,23 @@ class SparkIntegrationTest
     articles.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
+      .option("host", "localhost")
+      .option("port", "8080")
       .option("className", "Article")
       .option("batchSize", 10)
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName("Article")
-      .run()
-
-    if (results.hasErrors) {
-      println("Error getting Articles" + results.getError.getMessages)
+    val results = client.collections.use("Article").query.fetchObjects().objects()
+    if (results.isEmpty) {
+      println("Found no Articles")
     }
-    assert(results.getResult.size == 22)
-    val props = (0 to 22 - 1).map(i => results.getResult.get(i).getProperties)
-    results.getResult.forEach(obj => {
-      assert(obj.getProperties.get("wordCount") == 0)
-      assert(obj.getProperties.get("content") == "")
-      assert(obj.getProperties.get("title") == "")
+    assert(results.size == 22)
+    val props = (0 to 22 - 1).map(i => results.get(i).properties())
+    results.forEach(obj => {
+      assert(obj.properties().get("wordCount") == 0)
+      assert(obj.properties().get("content") == "")
+      assert(obj.properties().get("title") == "")
     })
     WeaviateDocker.deleteClass()
   }
@@ -447,25 +406,23 @@ class SparkIntegrationTest
     articles.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
+      .option("host", "localhost")
+      .option("port", "8080")
       .option("className", "Article")
       .option("batchSize", 10)
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName("Article")
-      .run()
-
-    if (results.hasErrors) {
-      println("Error getting Articles" + results.getError.getMessages)
+    val results = client.collections.use("Article").query.fetchObjects().objects()
+    if (results.isEmpty) {
+      println("Found no Articles")
     }
-    assert(results.getResult.size == 10)
-    val props = (0 to 10 - 1).map(i => results.getResult.get(i).getProperties)
-    results.getResult.forEach(obj => {
-      assert(obj.getProperties.get("wordCount") == 0)
-      assert(obj.getProperties.get("content") == "")
-      assert(obj.getProperties.get("title") == "")
+    assert(results.size == 10)
+    val props = (0 to 10 - 1).map(i => results.get(i).properties())
+    results.forEach(obj => {
+      assert(obj.properties().get("wordCount") == 0)
+      assert(obj.properties().get("content") == "")
+      assert(obj.properties().get("title") == "")
     })
     WeaviateDocker.deleteClass()
   }
@@ -478,25 +435,23 @@ class SparkIntegrationTest
     articles.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
+      .option("host", "localhost")
+      .option("port", "8080")
       .option("className", "Article")
       .option("batchSize", 9)
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName("Article")
-      .run()
-
-    if (results.hasErrors) {
-      println("Error getting Articles" + results.getError.getMessages)
+    val results = client.collections.use("Article").query.fetchObjects().objects()
+    if (results.isEmpty) {
+      println("Found no Articles")
     }
-    assert(results.getResult.size == 9)
-    val props = (0 to 9 - 1).map(i => results.getResult.get(i).getProperties)
-    results.getResult.forEach(obj => {
-      assert(obj.getProperties.get("wordCount") == 0)
-      assert(obj.getProperties.get("content") == "")
-      assert(obj.getProperties.get("title") == "")
+    assert(results.size == 9)
+    val props = (0 to 9 - 1).map(i => results.get(i).properties())
+    results.forEach(obj => {
+      assert(obj.properties().get("wordCount") == 0)
+      assert(obj.properties().get("content") == "")
+      assert(obj.properties().get("title") == "")
     })
     WeaviateDocker.deleteClass()
   }
@@ -509,25 +464,23 @@ class SparkIntegrationTest
     articles.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
+      .option("host", "localhost")
+      .option("port", "8080")
       .option("className", "Article")
       .option("batchSize", 11)
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName("Article")
-      .run()
-
-    if (results.hasErrors) {
-      println("Error getting Articles" + results.getError.getMessages)
+    val results = client.collections.use("Article").query.fetchObjects().objects()
+    if (results.isEmpty) {
+      println("Found no Articles")
     }
-    assert(results.getResult.size == 11)
-    val props = (0 to 11 - 1).map(i => results.getResult.get(i).getProperties)
-    results.getResult.forEach(obj => {
-      assert(obj.getProperties.get("wordCount") == 0)
-      assert(obj.getProperties.get("content") == "")
-      assert(obj.getProperties.get("title") == "")
+    assert(results.size == 11)
+    val props = (0 to 11 - 1).map(i => results.get(i).properties())
+    results.forEach(obj => {
+      assert(obj.properties().get("wordCount") == 0)
+      assert(obj.properties().get("content") == "")
+      assert(obj.properties().get("title") == "")
     })
     WeaviateDocker.deleteClass()
   }
@@ -540,24 +493,22 @@ class SparkIntegrationTest
     articles.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
+      .option("host", "localhost")
+      .option("port", "8080")
       .option("className", "Article")
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName("Article")
-      .run()
-
-    if (results.hasErrors) {
-      println("Error getting Articles" + results.getError.getMessages)
+    val results = client.collections.use("Article").query.fetchObjects().objects()
+    if (results.isEmpty) {
+      println("Found no Articles")
     }
 
-    val props = results.getResult.get(0).getProperties
+    val props = results.get(0).properties()
     assert(props.get("title") == "Sam")
     assert(props.get("content") == "Sam and Sam")
     assert(props.get("wordCount") == 3)
-    assert(results.getResult.size == 1)
+    assert(results.size == 1)
     WeaviateDocker.deleteClass()
   }
 
@@ -569,27 +520,27 @@ class SparkIntegrationTest
     articles.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
+      .option("host", "localhost")
+      .option("port", "8080")
       .option("className", "Article")
       .option("vector", "vector")
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName("Article")
-      .withVector()
-      .run()
-
-    if (results.hasErrors) {
-      println("Error getting Articles" + results.getError.getMessages)
+    val opts: Function[FetchObjects.Builder, ObjectBuilder[FetchObjects]] = {
+      o => o.includeVector()
+    }
+    val results = client.collections.use("Article").query.fetchObjects(opts).objects()
+    if (results.isEmpty) {
+      println("Found no Articles")
     }
 
-    assert(results.getResult.get(0).getVector sameElements Array(0.01f, 0.02f))
-    val props = results.getResult.get(0).getProperties
+    assert(results.get(0).vectors().getDefaultSingle sameElements Array(0.01f, 0.02f))
+    val props = results.get(0).properties()
     assert(props.get("title") == "Sam")
     assert(props.get("content") == "Sam and Sam")
     assert(props.get("wordCount") == 3)
-    assert(results.getResult.size == 1)
+    assert(results.size == 1)
     WeaviateDocker.deleteClass()
   }
 
@@ -602,26 +553,24 @@ class SparkIntegrationTest
     articles.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
+      .option("host", "localhost")
+      .option("port", "8080")
       .option("className", "Article")
       .option("id", "idCol")
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName("Article")
-      .run()
-
-    if (results.hasErrors) {
-      println("Error getting Articles" + results.getError.getMessages)
+    val results = client.collections.use("Article").query.fetchObjects().objects()
+    if (results.isEmpty) {
+      println("Found no Articles")
     }
 
-    assert(results.getResult.get(0).getId == id)
-    val props = results.getResult.get(0).getProperties
+    assert(results.get(0).uuid() == id)
+    val props = results.get(0).properties()
     assert(props.get("title") == "Sam")
     assert(props.get("content") == "Sam and Sam")
     assert(props.get("wordCount") == 3)
-    assert(results.getResult.size == 1)
+    assert(results.size == 1)
   }
 
   test("Article with invalid IDs") {
@@ -634,13 +583,14 @@ class SparkIntegrationTest
       articles.write
         .format("io.weaviate.spark.Weaviate")
         .option("scheme", "http")
-        .option("host", "localhost:8080")
+        .option("host", "localhost")
+        .option("port", "8080")
         .option("className", "Article")
         .option("id", "idCol")
         .mode("append")
         .save()
     }
-    assert(exception.getMessage.contains("""must be of type uuid: "invalid-uuid""""))
+    assert(exception.getMessage.contains("invalid UUID"))
   }
   
   test("Article with partially invalid batch") {
@@ -656,13 +606,14 @@ class SparkIntegrationTest
       articles.write
         .format("io.weaviate.spark.Weaviate")
         .option("scheme", "http")
-        .option("host", "localhost:8080")
+        .option("host", "localhost")
+        .option("port", "8080")
         .option("className", "Article")
         .option("id", "idCol")
         .mode("append")
         .save()
     }
-    assert(exception.getMessage.contains("""must be of type uuid: "invalid-uuid""""))
+    assert(exception.getMessage.contains("invalid UUID"))
   }
 
   test("Article with extra columns") {
@@ -674,7 +625,8 @@ class SparkIntegrationTest
       articles.write
         .format("io.weaviate.spark.Weaviate")
         .option("scheme", "http")
-        .option("host", "localhost:8080")
+        .option("host", "localhost")
+        .option("port", "8080")
         .option("className", "Article")
         .mode("append")
         .save()
@@ -702,30 +654,27 @@ class SparkIntegrationTest
     for (c <- cases) {
       println(s"Running test case: ${c.name}")
       WeaviateDocker.createClass(
-        Property.builder()
-          .dataType(List[String](c.weaviateDataType).asJava)
-          .name(c.name)
-          .build()
+        new Property.Builder(c.name, c.weaviateDataType).build()
       )
 
       c.df.write
         .format("io.weaviate.spark.Weaviate")
         .option("scheme", "http")
-        .option("host", "localhost:8080")
-        .option("grpc:host", "localhost:50051")
+        .option("host", "localhost")
+        .option("port", "8080")
+        .option("grpc:host", "localhost")
+        .option("grpc:port", "50051")
         .option("className", "Article")
         .mode("append")
         .save()
-      val results = client.data().objectsGetter()
-        .withClassName("Article")
-        .run()
 
-      if (results.hasErrors) {
-        println("Error getting Articles" + results.getError.getMessages)
+      val results = client.collections.use("Article").query.fetchObjects().objects()
+      if (results.isEmpty) {
+        println("Found no Articles")
       }
 
-      assert(results.getResult.size == 1)
-      val props = results.getResult.get(0).getProperties
+      assert(results.size == 1)
+      val props = results.get(0).properties()
       assert(props.get(c.name) == c.expected)
       WeaviateDocker.deleteClass()
     }
@@ -739,23 +688,22 @@ class SparkIntegrationTest
     df.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
-      .option("grpc:host", "localhost:50051")
+      .option("host", "localhost")
+      .option("port", "8080")
+      .option("grpc:host", "localhost")
+      .option("grpc:port", "50051")
       .option("className", className)
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName(className)
-      .run()
-
-    if (results.hasErrors) {
-      println(s"Error getting ${className} ${results.getError.getMessages}")
+    val results = client.collections.use(className).query.fetchObjects().objects()
+    if (results.isEmpty) {
+      println(s"Found no data for ${className}")
     }
 
-    assert(results.getResult.size == 3)
-    results.getResult.forEach(r => {
-      val props = r.getProperties
+    assert(results.size == 3)
+    results.forEach(r => {
+      val props = r.properties()
       assert(props.get("title") != null)
       assert(props.get("author") != null)
       assert(props.get("author").isInstanceOf[java.util.Map[String, Object]])
@@ -782,27 +730,26 @@ class SparkIntegrationTest
     df.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
-      .option("grpc:host", "localhost:50051")
+      .option("host", "localhost")
+      .option("port", "8080")
+      .option("grpc:host", "localhost")
+      .option("grpc:port", "50051")
       .option("className", className)
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName(className)
-      .run()
-
-    if (results.hasErrors) {
-      println(s"Error getting ${className} ${results.getError.getMessages}")
+    val results = client.collections.use(className).query.fetchObjects().objects()
+    if (results.isEmpty) {
+      println(s"Found no data for ${className}")
     }
 
-    assert(results.getResult.size == 4)
-    results.getResult.forEach(r => {
-      val props = r.getProperties
+    assert(results.size == 4)
+    results.forEach(r => {
+      val props = r.properties()
       assert(props.get("genre") != null)
       val genre = props.get("genre").asInstanceOf[String]
       if (genre.equals("to be defined") || genre.equals("empty")) {
-        assert(props.get("authors") == null)
+        assert(props.get("authors") == null || props.get("authors").asInstanceOf[JList[_]].isEmpty)
       } else {
         assert(props.get("authors") != null)
         assert(props.get("authors").isInstanceOf[java.util.List[java.util.Map[String, Object]]])
@@ -822,11 +769,12 @@ class SparkIntegrationTest
     import spark.implicits._
     val articles = Seq(Article("Sam", "Sam and Sam", 3)).toDF
 
-    val exception = intercept[WeaviateResultError] {
+    val exception = intercept[Exception] {
       articles.write
         .format("io.weaviate.spark.Weaviate")
         .option("scheme", "http")
-        .option("host", "localhost:1234")
+        .option("host", "localhost")
+        .option("port", "1234")
         .option("className", "Article")
         .mode("append")
         .save()
@@ -843,27 +791,24 @@ class SparkIntegrationTest
     articles.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
+      .option("host", "localhost")
+      .option("port", "8080")
       .option("className", "Article")
       .option("vector", "embedding")
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName("Article")
-      .withVector()
-      .run()
-
-    if (results.hasErrors) {
-      println("Error getting Articles" + results.getError.getMessages)
+    val results = client.collections.use("Article").query.fetchObjects(o => o.includeVector()).objects()
+    if (results.isEmpty) {
+      println("Found no Articles")
     }
 
-    assert(results.getResult.get(0).getVector sameElements Array(0.111f, 0.222f))
-    val props = results.getResult.get(0).getProperties
+    assert(results.get(0).vectors().getDefaultSingle sameElements Array(0.111f, 0.222f))
+    val props = results.get(0).properties()
     assert(props.get("title") == "Title")
     assert(props.get("content") == "Some content")
     assert(props.get("wordCount") == 3)
-    assert(results.getResult.size == 1)
+    assert(results.size == 1)
     WeaviateDocker.deleteClass()
   }
 
@@ -875,25 +820,23 @@ class SparkIntegrationTest
     regularVectors.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
-      .option("grpc:host", "localhost:50051")
+      .option("host", "localhost")
+      .option("port", "8080")
+      .option("grpc:host", "localhost")
+      .option("grpc:port", "50051")
       .option("className", "RegularVectors")
       .option("vectors:regular", "embedding")
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName("RegularVectors")
-      .withVector()
-      .run()
-
-    if (results.hasErrors) {
-      println("Error getting RegularVectors" + results.getError.getMessages)
+    val results = client.collections.use("RegularVectors").query.fetchObjects(o => o.includeVector()).objects()
+    if (results.isEmpty) {
+      println("Found no RegularVectors")
     }
 
-    assert(results.getResult.size == 1)
-    assert(results.getResult.get(0).getVectors.get("regular") sameElements Array(0.111f, 0.222f))
-    val props = results.getResult.get(0).getProperties
+    assert(results.size == 1)
+    assert(results.get(0).vectors().getSingle("regular") sameElements Array(0.111f, 0.222f))
+    val props = results.get(0).properties()
     assert(props.get("title") == "Title")
     WeaviateDocker.deleteRegularVectorsClass()
   }
@@ -906,29 +849,30 @@ class SparkIntegrationTest
     namedVectors.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
-      .option("grpc:host", "localhost:50051")
+      .option("host", "localhost")
+      .option("port", "8080")
+      .option("grpc:host", "localhost")
+      .option("grpc:port", "50051")
       .option("className", "MultiVectors")
       .option("vectors:regular", "regularVector")
       .option("multiVectors:colbert", "multiVector")
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName("MultiVectors")
-      .withVector()
-      .run()
-
-    if (results.hasErrors) {
-      println("Error getting MultiVectors" + results.getError.getMessages)
+    val opts: Function[FetchObjects.Builder, ObjectBuilder[FetchObjects]] = {
+      o => o.includeVector()
+    }
+    val results = client.collections.use("MultiVectors").query.fetchObjects(opts).objects()
+    if (results.isEmpty) {
+      println("Found no MultiVectors")
     }
 
-    assert(results.getResult.size == 1)
-    assert(results.getResult.get(0).getVectors.get("regular") sameElements Array(0.111f, 0.222f))
-    assert(results.getResult.get(0).getMultiVectors.get("colbert").length == 2)
-    assert(results.getResult.get(0).getMultiVectors.get("colbert")(0) sameElements Array(0.1f, 0.2f))
-    assert(results.getResult.get(0).getMultiVectors.get("colbert")(1) sameElements Array(0.3f, 0.4f))
-    val props = results.getResult.get(0).getProperties
+    assert(results.size == 1)
+    assert(results.get(0).vectors().getSingle("regular") sameElements Array(0.111f, 0.222f))
+    assert(results.get(0).vectors().getMulti("colbert").length == 2)
+    assert(results.get(0).vectors().getMulti("colbert")(0) sameElements Array(0.1f, 0.2f))
+    assert(results.get(0).vectors().getMulti("colbert")(1) sameElements Array(0.3f, 0.4f))
+    val props = results.get(0).properties()
     assert(props.get("title") == "Title")
     WeaviateDocker.deleteMultiVectorsClass()
   }
@@ -943,8 +887,10 @@ class SparkIntegrationTest
     namedVectors.write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
-      .option("grpc:host", "localhost:50051")
+      .option("host", "localhost")
+      .option("port", "8080")
+      .option("grpc:host", "localhost")
+      .option("grpc:port", "50051")
       .option("className", "MixedVectors")
       .option("vectors:regular", "regularVector")
       .option("vectors:regular2", "embedding")
@@ -953,25 +899,24 @@ class SparkIntegrationTest
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName("MixedVectors")
-      .withVector()
-      .run()
-
-    if (results.hasErrors) {
-      println("Error getting MixedVectors" + results.getError.getMessages)
+    val opts: Function[FetchObjects.Builder, ObjectBuilder[FetchObjects]] = {
+      o => o.includeVector()
+    }
+    val results = client.collections.use("MixedVectors").query.fetchObjects(opts).objects()
+    if (results.isEmpty) {
+      println("Found no MixedVectors")
     }
 
-    assert(results.getResult.size == 1)
-    assert(results.getResult.get(0).getVectors.get("regular") sameElements Array(0.111f, 0.222f))
-    assert(results.getResult.get(0).getVectors.get("regular2") sameElements Array(-0.111f, -0.222f))
-    assert(results.getResult.get(0).getMultiVectors.get("colbert").length == 2)
-    assert(results.getResult.get(0).getMultiVectors.get("colbert")(0) sameElements Array(0.1f, 0.2f))
-    assert(results.getResult.get(0).getMultiVectors.get("colbert")(1) sameElements Array(0.3f, 0.4f))
-    assert(results.getResult.get(0).getMultiVectors.get("colbert2").length == 2)
-    assert(results.getResult.get(0).getMultiVectors.get("colbert2")(0) sameElements Array(-0.1f, -0.2f))
-    assert(results.getResult.get(0).getMultiVectors.get("colbert2")(1) sameElements Array(-0.3f, -0.4f))
-    val props = results.getResult.get(0).getProperties
+    assert(results.size == 1)
+    assert(results.get(0).vectors().getSingle("regular") sameElements Array(0.111f, 0.222f))
+    assert(results.get(0).vectors().getSingle("regular2") sameElements Array(-0.111f, -0.222f))
+    assert(results.get(0).vectors().getMulti("colbert").length == 2)
+    assert(results.get(0).vectors().getMulti("colbert")(0) sameElements Array(0.1f, 0.2f))
+    assert(results.get(0).vectors().getMulti("colbert")(1) sameElements Array(0.3f, 0.4f))
+    assert(results.get(0).vectors().getMulti("colbert2").length == 2)
+    assert(results.get(0).vectors().getMulti("colbert2")(0) sameElements Array(-0.1f, -0.2f))
+    assert(results.get(0).vectors().getMulti("colbert2")(1) sameElements Array(-0.3f, -0.4f))
+    val props = results.get(0).properties()
     assert(props.get("title") == "Mixed title")
     WeaviateDocker.deleteMixedVectorsClass()
   }
@@ -989,22 +934,21 @@ class SparkIntegrationTest
     dataFrame.withColumn("geo", to_json(col("geo"))).write
       .format("io.weaviate.spark.Weaviate")
       .option("scheme", "http")
-      .option("host", "localhost:8080")
-      .option("grpc:host", "localhost:50051")
+      .option("host", "localhost")
+      .option("port", "8080")
+      .option("grpc:host", "localhost")
+      .option("grpc:port", "50051")
       .option("className", "GeoClass")
       .mode("append")
       .save()
 
-    val results = client.data().objectsGetter()
-      .withClassName("GeoClass")
-      .run()
-
-    if (results.hasErrors) {
-      println("Error getting GeoClass" + results.getError.getMessages)
+    val results = client.collections.use("GeoClass").query.fetchObjects().objects()
+    if (results.isEmpty) {
+      println("Found no GeoClass")
     }
 
-    assert(results.getResult.size == 1)
-    val props = results.getResult.get(0).getProperties
+    assert(results.size == 1)
+    val props = results.get(0).properties()
     assert(props.get("title") == "Title1")
     assert(props.get("geo") != null)
     WeaviateDocker.deleteGeoClass()
@@ -1016,7 +960,7 @@ class SparkIntegrationTestsOpenAI
     with SparkSessionTestWrapper
     with BeforeAndAfter {
 
-  val client = WeaviateDocker.client
+  lazy val client = WeaviateDocker.client
 
   before {
     val exit_code = WeaviateDocker.start(vectorizerModule = "text2vec-openai")
@@ -1031,16 +975,17 @@ class SparkIntegrationTestsOpenAI
   }
 
   test("Set OpenAI API key with incorrect value") {
-    WeaviateDocker.createClass()
+    WeaviateDocker.createClassWithText2VecOpenAIVectorizer()
 
     import spark.implicits._
     val articles = Seq(Article("Sam", "Big Dog", 3), Article("Susie", "Big Cat", 2)).toDF
 
-    val exception = intercept[SparkException] {
+    val exception = intercept[Exception] {
       articles.write
         .format("io.weaviate.spark.Weaviate")
         .option("scheme", "http")
-        .option("host", "localhost:8080")
+        .option("host", "localhost")
+        .option("port", "8080")
         .option("header:X-OpenAI-Api-Key", "shouldntwork")
         .option("className", "Article")
         .mode("append")
