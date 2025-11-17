@@ -15,11 +15,11 @@ lazy val root = (project in file("."))
 ThisBuild / scalafixDependencies += "org.scalalint" %% "rules" % "0.2.1" % "runtime"
 
 lazy val sparkVersion = "4.0.1"
-lazy val grpcNettyShadedVersion = "1.72.0"
+lazy val grpcNettyShadedVersion = "1.76.0"
 lazy val weaviateClient6Version = "6.0.0-M2"
-lazy val scalaCollectionCompatVersion = "2.13.0"
+lazy val scalaCollectionCompatVersion = "2.14.0"
 lazy val scalatestVersion = "3.2.19"
-lazy val gsonVersion = "2.13.1"
+lazy val gsonVersion = "2.13.2"
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % scalatestVersion % "test",
   "org.apache.spark" %% "spark-core" % sparkVersion % "provided,test",
