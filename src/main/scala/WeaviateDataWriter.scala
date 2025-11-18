@@ -31,7 +31,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
   }
 
   def writeBatch(retries: Int = weaviateOptions.retries): Unit = {
-    if (batch.size == 0) return
+    if (batch.isEmpty) return
 
     val consistencyLevel = weaviateOptions.consistencyLevel
     val client = weaviateOptions.getClient()
@@ -55,14 +55,14 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       }
     } else {
       val (objectsWithSuccess, objectsWithError) = results.responses().asScala.partition(_.error() == null)
-      if (objectsWithError.size > 0 && retries > 0) {
+      if (objectsWithError.nonEmpty && retries > 0) {
         val errors = objectsWithError.map(obj => s"${obj.uuid()}: ${obj.error()}")
         val successIDs = objectsWithSuccess.map(_.uuid()).toList
         logWarning(s"Successfully imported ${successIDs}. " +
           s"Retrying objects with an error. Following objects in the batch upload had an error: ${errors.mkString("Array(", ", ", ")")}")
         batch = batch -- successIDs
         writeBatch(retries - 1)
-      } else if (objectsWithError.size > 0) {
+      } else if (objectsWithError.nonEmpty) {
         val errorIds = objectsWithError.map(obj => obj.uuid())
         val errorMessages = objectsWithError.map(obj => obj.error()).distinct
         throw WeaviateResultError(s"Error writing to weaviate and no more retries left." +
@@ -78,10 +78,9 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
 
   private[spark] def buildWeaviateObject(record: InternalRow, collectionConfig: CollectionConfig = null): WeaviateObject[java.util.Map[String, Object], Reference, ObjectMetadata] = {
     var builder: WeaviateObject.Builder[java.util.Map[String, Object], Reference, ObjectMetadata] = new WeaviateObject.Builder()
-
     builder = builder.collection(weaviateOptions.className)
 
-    var id: String = null
+    val metadata = new ObjectMetadata.Builder()
     val properties = mutable.Map[String, AnyRef]()
     var vector: Array[Float] = null
     val vectors = mutable.Map[String, Array[Float]]()
@@ -104,31 +103,28 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
 
           multiVectors += (weaviateOptions.multiVectors(key) -> multiVector)
         }
-        case weaviateOptions.id => id = record.getString(field._2)//builder.id(record.getString(field._2))
+        case weaviateOptions.id => metadata.uuid(record.getString(field._2))
         case _ => properties(field._1.name) = getPropertyValue(field._2, record, field._1.dataType, false, field._1.name, collectionConfig)
       }
     )
-    val metadata = new ObjectMetadata.Builder()
 
     if (weaviateOptions.id == null) {
       metadata.uuid(java.util.UUID.randomUUID.toString)
-    } else {
-      metadata.uuid(id)
     }
 
-    val allvectors = ListBuffer.empty[Vectors]
+    val allVectors = ListBuffer.empty[Vectors]
     if (vector != null) {
-      allvectors += Vectors.of(vector)
+      allVectors += Vectors.of(vector)
     }
     if (vectors.nonEmpty) {
       val arr = vectors.map { case (key, arr) => Vectors.of(key, arr) }.toArray
-      allvectors ++= arr
+      allVectors ++= arr
     }
     if (multiVectors.nonEmpty) {
       val arr = multiVectors.map { case (key, multiVector) => Vectors.of(key, multiVector) }.toArray
-      allvectors ++= arr
+      allVectors ++= arr
     }
-    metadata.vectors(allvectors.toSeq : _*)
+    metadata.vectors(allVectors.toSeq : _*)
 
     builder.properties(properties.asJava).metadata(metadata.build()).build()
   }
@@ -235,7 +231,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
   }
 
   override def abort(): Unit = {
-    // TODO rollback previously written batch results if issue occured
+    // TODO rollback previously written batch results if issue occurred
     logError("Aborted data write")
   }
 }
