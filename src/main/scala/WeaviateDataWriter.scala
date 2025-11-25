@@ -2,12 +2,12 @@ package io.weaviate.spark
 
 import com.google.gson.reflect.TypeToken
 import com.google.gson.{Gson, JsonSyntaxException}
-import io.weaviate.client6.v1.api.collections.data.Reference
+import io.weaviate.client6.v1.api.collections.WeaviateObject
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
 import org.apache.spark.sql.types._
-import io.weaviate.client6.v1.api.collections.{CollectionConfig, ObjectMetadata, Vectors, WeaviateObject}
+import io.weaviate.client6.v1.api.collections.{CollectionConfig, Vectors}
 import org.apache.spark.sql.catalyst.util.{ArrayData, GenericArrayData}
 
 import java.util.{Map => JavaMap}
@@ -20,12 +20,12 @@ case class WeaviateCommitMessage(msg: String) extends WriterCommitMessage
 
 case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructType)
   extends DataWriter[InternalRow] with Serializable with Logging {
-  var batch = mutable.Map[String, WeaviateObject[JavaMap[String, Object], Reference, ObjectMetadata]]()
+  var batch = mutable.Map[String, WeaviateObject[JavaMap[String, Object]]]()
   private lazy val weaviateClass = weaviateOptions.getCollectionConfig()
 
   override def write(record: InternalRow): Unit = {
     val weaviateObject = buildWeaviateObject(record, weaviateClass)
-    batch += (weaviateObject.uuid() -> weaviateObject)
+    batch += (weaviateObject.uuid -> weaviateObject)
 
     if (batch.size >= weaviateOptions.batchSize) writeBatch()
   }
@@ -33,10 +33,12 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
   def writeBatch(retries: Int = weaviateOptions.retries): Unit = {
     if (batch.isEmpty) return
 
-    val consistencyLevel = weaviateOptions.consistencyLevel
     val client = weaviateOptions.getClient()
 
-    val collection = client.collections.use(weaviateOptions.className).withTenant(weaviateOptions.tenant).withConsistencyLevel(consistencyLevel)
+    val collection = client.collections
+      .use(weaviateOptions.className)
+      .withTenant(weaviateOptions.tenant)
+      .withConsistencyLevel(weaviateOptions.consistencyLevel)
 
     val results = collection.data.insertMany(batch.values.toList.asJava)
 
@@ -76,11 +78,9 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     }
   }
 
-  private[spark] def buildWeaviateObject(record: InternalRow, collectionConfig: CollectionConfig = null): WeaviateObject[java.util.Map[String, Object], Reference, ObjectMetadata] = {
-    var builder: WeaviateObject.Builder[java.util.Map[String, Object], Reference, ObjectMetadata] = new WeaviateObject.Builder()
-    builder = builder.collection(weaviateOptions.className)
+  private[spark] def buildWeaviateObject(record: InternalRow, collectionConfig: CollectionConfig = null): WeaviateObject[java.util.Map[String, Object]] = {
+    val builder: WeaviateObject.Builder[java.util.Map[String, Object]] = new WeaviateObject.Builder()
 
-    val metadata = new ObjectMetadata.Builder()
     val properties = mutable.Map[String, AnyRef]()
     var vector: Array[Float] = null
     val vectors = mutable.Map[String, Array[Float]]()
@@ -103,13 +103,13 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
 
           multiVectors += (weaviateOptions.multiVectors(key) -> multiVector)
         }
-        case weaviateOptions.id => metadata.uuid(record.getString(field._2))
+        case weaviateOptions.id => builder.uuid(record.getString(field._2))
         case _ => properties(field._1.name) = getPropertyValue(field._2, record, field._1.dataType, false, field._1.name, collectionConfig)
       }
     )
 
     if (weaviateOptions.id == null) {
-      metadata.uuid(java.util.UUID.randomUUID.toString)
+      builder.uuid(java.util.UUID.randomUUID.toString)
     }
 
     val allVectors = ListBuffer.empty[Vectors]
@@ -124,9 +124,8 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       val arr = multiVectors.map { case (key, multiVector) => Vectors.of(key, multiVector) }.toArray
       allVectors ++= arr
     }
-    metadata.vectors(allVectors.toSeq : _*)
 
-    builder.properties(properties.asJava).metadata(metadata.build()).build()
+    builder.tenant(weaviateOptions.tenant).properties(properties.asJava).vectors(allVectors.toSeq : _*).build()
   }
 
   def getPropertyValue(index: Int, record: InternalRow, dataType: DataType, parseObjectArrayItem: Boolean, propertyName: String, collectionConfig: CollectionConfig): AnyRef = {
@@ -216,7 +215,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
           })
         }
         objList.asJava
-      case default => throw new SparkDataTypeNotSupported(s"DataType ${default} is not supported by Weaviate")
+      case default => throw SparkDataTypeNotSupported(s"DataType ${default} is not supported by Weaviate")
     }
   }
 

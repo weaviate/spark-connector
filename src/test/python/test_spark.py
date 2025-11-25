@@ -33,7 +33,7 @@ def get_connector_version():
 
 connector_version = os.environ.get("CONNECTOR_VERSION", get_connector_version())
 scala_version = os.environ.get("SCALA_VERSION", "2.13")
-weaviate_version = os.environ.get("WEAVIATE_VERSION", "1.30.3")
+weaviate_version = os.environ.get("WEAVIATE_VERSION", "1.32.17")
 spark_connector_jar_path = os.environ.get(
     "CONNECTOR_JAR_PATH", f"target/scala-{scala_version}/spark-connector-assembly-{connector_version}.jar"
 )
@@ -69,7 +69,7 @@ def weaviate_client():
                      "CLUSTER_HOSTNAME": "node1",
                      "PERSISTENCE_DATA_PATH": "./data"},
     )
-    time.sleep(0.5)
+    time.sleep(2)
     wclient = weaviate.Client('http://localhost:8080')
     test_class_name = "TestWillBeRemoved"
     retries = 3

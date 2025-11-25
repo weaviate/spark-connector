@@ -90,7 +90,7 @@ class WeaviateOptions(config: CaseInsensitiveStringMap) extends Serializable {
     if (oidcUsername.trim().nonEmpty && oidcPassword.trim().nonEmpty) {
       config.authentication(Authentication.resourceOwnerPassword(oidcUsername, oidcPassword, oidcScopes.asJava))
     } else if (oidcClientSecret.trim().nonEmpty) {
-      config.authentication(Authentication.clientCredentials(oidcClientId, oidcClientSecret, oidcScopes.asJava))
+      config.authentication(Authentication.clientCredentials(oidcClientSecret, oidcScopes.asJava))
     } else if (oidcAccessToken.trim().nonEmpty) {
       config.authentication(Authentication.bearerToken(oidcAccessToken, oidcRefreshToken, oidcAccessTokenLifetime))
     } else if (apiKey.trim().nonEmpty) {

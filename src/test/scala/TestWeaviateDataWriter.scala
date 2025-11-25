@@ -29,8 +29,7 @@ class TestWeaviateDataWriter extends AnyFunSuite {
     assert(weaviateObject.properties().get("title").equals("Sam"))
     assert(weaviateObject.properties().get("content") == "Sam")
     assert(weaviateObject.properties().get("wordCount") == 5)
-    // how to get tenant?
-//    assert(weaviateObject. == "TenantA")
+    assert(weaviateObject.tenant() == "TenantA")
   }
 
   test("Test Build Weaviate Object without supplied ID") {
@@ -52,7 +51,7 @@ class TestWeaviateDataWriter extends AnyFunSuite {
     assert(weaviateObject.properties().get("content") == "Sam")
     assert(weaviateObject.properties().get("wordCount") == 5)
     assert(weaviateObject.uuid() != null)
-//    assert(weaviateObject.getTenant == null)
+    assert(weaviateObject.tenant() == null)
   }
 
   test("Test Build Weaviate Object with supplied ID") {
@@ -78,7 +77,7 @@ class TestWeaviateDataWriter extends AnyFunSuite {
     assert(weaviateObject.properties().get("content") == "Sam")
     assert(weaviateObject.properties().get("wordCount") == 5)
     assert(weaviateObject.uuid() == uuid)
-//    assert(weaviateObject.getTenant == null)
+    assert(weaviateObject.tenant() == null)
   }
 
   test("Test Build Weaviate Object with DateString") {
@@ -103,7 +102,7 @@ class TestWeaviateDataWriter extends AnyFunSuite {
     assert(weaviateObject.properties().get("content") == "Sam")
     assert(weaviateObject.properties().get("wordCount") == 5)
     assert(weaviateObject.properties().get("date") == "2022-11-18T00:00:00Z")
-//    assert(weaviateObject.getTenant == null)
+    assert(weaviateObject.tenant() == null)
   }
 
   test("Test Build Weaviate Object with Unsupported Data types") {
@@ -180,9 +179,9 @@ class TestWeaviateDataWriter extends AnyFunSuite {
     assert(weaviateObject.properties().get("content") == "Sam")
     assert(weaviateObject.properties().get("wordCount") == 5)
     assert(weaviateObject.uuid() == uuid)
-    assert(weaviateObject.metadata().vectors() != null)
-    assert(weaviateObject.metadata().vectors().getDefaultSingle().sameElements(embedding))
-//    assert(weaviateObject.getTenant == null)
+    assert(weaviateObject.vectors() != null)
+    assert(weaviateObject.vectors().getDefaultSingle().sameElements(embedding))
+    assert(weaviateObject.tenant() == null)
   }
 
   test("Test Build Weaviate Object with vectors") {
@@ -214,10 +213,10 @@ class TestWeaviateDataWriter extends AnyFunSuite {
     assert(weaviateObject.properties().get("content") == "Sam")
     assert(weaviateObject.properties().get("wordCount") == 5)
     assert(weaviateObject.uuid() == uuid)
-    assert(weaviateObject.metadata().vectors() != null)
-    assert(weaviateObject.metadata().vectors().getSingle("v1").sameElements(embedding1))
-    assert(weaviateObject.metadata().vectors().getSingle("v2").sameElements(embedding2))
-//    assert(weaviateObject.getTenant == null)
+    assert(weaviateObject.vectors() != null)
+    assert(weaviateObject.vectors().getSingle("v1").sameElements(embedding1))
+    assert(weaviateObject.vectors().getSingle("v2").sameElements(embedding2))
+    assert(weaviateObject.tenant() == null)
   }
 
   test("Test Build Weaviate Object with vectors and multi vectors") {
@@ -250,12 +249,12 @@ class TestWeaviateDataWriter extends AnyFunSuite {
     assert(weaviateObject.properties().get("content") == "Sam")
     assert(weaviateObject.properties().get("wordCount") == 5)
     assert(weaviateObject.uuid() == uuid)
-    assert(weaviateObject.metadata().vectors() != null)
-    assert(weaviateObject.metadata().vectors().getSingle("v1").sameElements(embedding1))
-    assert(weaviateObject.metadata().vectors().getMulti("colbert").length == 2)
-    assert(weaviateObject.metadata().vectors().getMulti("colbert")(0).sameElements(colbert(0)))
-    assert(weaviateObject.metadata().vectors().getMulti("colbert")(1).sameElements(colbert(1)))
-//    assert(weaviateObject.getTenant == null)
+    assert(weaviateObject.vectors() != null)
+    assert(weaviateObject.vectors().getSingle("v1").sameElements(embedding1))
+    assert(weaviateObject.vectors().getMulti("colbert").length == 2)
+    assert(weaviateObject.vectors().getMulti("colbert")(0).sameElements(colbert(0)))
+    assert(weaviateObject.vectors().getMulti("colbert")(1).sameElements(colbert(1)))
+    assert(weaviateObject.tenant() == null)
   }
 
   test("Test Build Weaviate Object with geo coordinates") {
@@ -287,6 +286,6 @@ class TestWeaviateDataWriter extends AnyFunSuite {
     assert(weaviateObject.uuid() == uuid)
     assert(weaviateObject.properties().get("title") == "title")
     assert(weaviateObject.properties().get("geo") != null)
-//    assert(weaviateObject.getTenant == null)
+    assert(weaviateObject.tenant() == null)
   }
 }

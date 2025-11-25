@@ -5,7 +5,7 @@ import org.apache.spark.sql.execution.streaming.MemoryStream
 import org.apache.spark.sql.{AnalysisException, DataFrame, Encoder, Encoders}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
-import io.weaviate.client6.v1.api.collections.{Property}
+import io.weaviate.client6.v1.api.collections.Property
 import io.weaviate.client6.v1.internal.ObjectBuilder
 import org.apache.spark.SparkException
 
