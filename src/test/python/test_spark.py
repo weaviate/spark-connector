@@ -31,6 +31,19 @@ def get_connector_version():
     return re.search(r"version :=\ \"(.*)\"", version_str).group(1)
 
 
+def wait_until_ready(max_attempts: int = 10) -> bool:
+    import requests, time
+    for i in range(max_attempts):
+        try:
+            if requests.get("http://localhost:8080/v1/.well-known/ready", timeout=5).status_code == 200:
+                return True
+        except requests.RequestException:
+            pass
+        if i < max_attempts - 1:
+            time.sleep(1)
+    return False
+
+
 connector_version = os.environ.get("CONNECTOR_VERSION", get_connector_version())
 scala_version = os.environ.get("SCALA_VERSION", "2.13")
 weaviate_version = os.environ.get("WEAVIATE_VERSION", "1.32.17")
@@ -69,7 +82,9 @@ def weaviate_client():
                      "CLUSTER_HOSTNAME": "node1",
                      "PERSISTENCE_DATA_PATH": "./data"},
     )
-    time.sleep(2)
+    time.sleep(3)
+    if not wait_until_ready():
+        raise RuntimeError("Weaviate is not ready, stopping tests")
     wclient = weaviate.Client('http://localhost:8080')
     test_class_name = "TestWillBeRemoved"
     retries = 3
@@ -83,6 +98,7 @@ def weaviate_client():
             time.sleep(1)
     yield wclient
     client.containers.get(container_name).remove(force=True)
+    time.sleep(2)
 
 
 def test_string_arrays(spark: SparkSession, weaviate_client: weaviate.Client):
@@ -446,7 +462,6 @@ def test_kafka_person_data(spark: SparkSession, weaviate_client: weaviate.Client
     person_uuids = set([e["id_column"] for e in people])
     assert result["data"]["Aggregate"]["Person"][0]["meta"]["count"] == len(person_uuids)
 
-@pytest.mark.skip(reason="Uncomment after migration to python v4")
 def test_kafka_streaming_byov_data(spark: SparkSession, weaviate_client: weaviate.Client, tmp_path, kafka_host):
     weaviate_client.schema.create_class(byov_schema)
     producer = KafkaProducer(bootstrap_servers=[kafka_host],

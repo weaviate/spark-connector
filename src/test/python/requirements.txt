@@ -5,3 +5,4 @@ weaviate-client==3.26.7
 pandas
 testcontainers
 kafka-python
+requests
