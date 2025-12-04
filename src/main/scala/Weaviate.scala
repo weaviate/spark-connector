@@ -17,7 +17,9 @@ class Weaviate extends TableProvider with DataSourceRegister {
     val className = weaviateOptions.className
     val result = client.collections.getConfig(className)
     if (result.isEmpty) throw WeaviateClassNotFoundError(s"Collection ${className} was not found.")
-    val properties = result.get().properties().asScala
+    val properties = result
+      .map(r => r.properties().asScala)
+      .orElseThrow(() => WeaviateClassNotFoundError(s"Collection ${className} was not found."))
     val structFields = properties.map(p =>
       StructField(p.propertyName(), Utils.weaviateToSparkDatatype(p.dataTypes(), p.nestedProperties()), true, Metadata.empty))
     if (weaviateOptions.vector != null)

@@ -26,7 +26,7 @@ class TestWeaviateDataWriter extends AnyFunSuite {
     val row = new GenericInternalRow(Array[Any](sam, sam, 5))
     val weaviateObject = dw.buildWeaviateObject(row)
 
-    assert(weaviateObject.properties().get("title").equals("Sam"))
+    assert(weaviateObject.properties().get("title") == ("Sam"))
     assert(weaviateObject.properties().get("content") == "Sam")
     assert(weaviateObject.properties().get("wordCount") == 5)
     assert(weaviateObject.tenant() == "TenantA")

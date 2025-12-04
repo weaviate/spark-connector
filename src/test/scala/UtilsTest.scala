@@ -45,7 +45,7 @@ class UtilsTest extends AnyFunSuite {
     assert(st.fieldIndex("nestedNumber") == 1)
     assert(st.fieldIndex("nestedText") == 2)
     assert(st.fieldIndex("nestedObjects") == 3)
-    val nestedObjects = st.toIterator.find(_.name == "nestedObjects").get
+    val nestedObjects = st.find(_.name == "nestedObjects").get
     // check nestedObjects fields
     val nestedNames = List("nestedDateLvl2", "nestedBoolLvl2", "nestedNumbersLvl2", "moreNested")
     val nestedObjectsFields = nestedObjects.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[StructType].fields
@@ -53,7 +53,7 @@ class UtilsTest extends AnyFunSuite {
       assert(nestedNames.contains(f.name))
     })
     // check moreNested fields
-    val moreNested = nestedObjectsFields.toIterator.find(_.name == "moreNested").get
+    val moreNested = nestedObjectsFields.find(_.name == "moreNested").get
     val moreNestedNames = List("a", "b")
     val moreNestedFields = moreNested.dataType.asInstanceOf[StructType].fields
     moreNestedFields.foreach(f => {
@@ -62,15 +62,15 @@ class UtilsTest extends AnyFunSuite {
   }
 
   private def getObjectPropertyType(dataType: String): Property = {
-    val moreNested = new Property.Builder("moreNested", DataType.OBJECT).
-      nestedProperties(Property.text("a"), Property.number("b")).build()
-
     val nestedObjects = new Property.Builder("nestedObjects", DataType.OBJECT_ARRAY)
       .nestedProperties(
         Property.bool("nestedBoolLvl2"),
         Property.date("nestedDateLvl2"),
         Property.numberArray("nestedNumbersLvl2"),
-        moreNested
+        Property.`object`("moreNested", moreNested => moreNested.nestedProperties(
+          Property.text("a"),
+          Property.number("b")
+        ))
       ).build()
 
     new Property.Builder("objectProperty", dataType)

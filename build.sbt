@@ -16,7 +16,7 @@ ThisBuild / scalafixDependencies += "org.scalalint" %% "rules" % "0.2.1" % "runt
 
 lazy val sparkVersion = "4.0.1"
 lazy val grpcNettyShadedVersion = "1.76.0"
-lazy val weaviateClient6Version = "6.0.0"
+lazy val weaviateClient6Version = "6.0.1"
 lazy val scalaCollectionCompatVersion = "2.14.0"
 lazy val scalatestVersion = "3.2.19"
 lazy val gsonVersion = "2.13.2"

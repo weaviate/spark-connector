@@ -2,7 +2,7 @@ package io.weaviate.spark
 
 import com.google.gson.reflect.TypeToken
 import com.google.gson.{Gson, JsonSyntaxException}
-import io.weaviate.client6.v1.api.collections.WeaviateObject
+import io.weaviate.client6.v1.api.collections.{WeaviateObject, DataType => WeaviateDataType}
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
@@ -117,12 +117,10 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
       allVectors += Vectors.of(vector)
     }
     if (vectors.nonEmpty) {
-      val arr = vectors.map { case (key, arr) => Vectors.of(key, arr) }.toArray
-      allVectors ++= arr
+      allVectors ++= vectors.map { case (key, arr) => Vectors.of(key, arr) }
     }
     if (multiVectors.nonEmpty) {
-      val arr = multiVectors.map { case (key, multiVector) => Vectors.of(key, multiVector) }.toArray
-      allVectors ++= arr
+      allVectors ++= multiVectors.map { case (key, multiVector) => Vectors.of(key, multiVector) }
     }
 
     builder.tenant(weaviateOptions.tenant).properties(properties.asJava).vectors(allVectors.toSeq : _*).build()
@@ -138,7 +136,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
           dt = p.dataTypes().get(0)
         }
       })
-      if ((dt == "geoCoordinates" || dt == "phoneNumber") && valueFromField.isInstanceOf[String]) {
+      if ((dt == WeaviateDataType.GEO_COORDINATES || dt == WeaviateDataType.PHONE_NUMBER) && valueFromField.isInstanceOf[String]) {
         return jsonToJavaMap(propertyName, valueFromField.toString).get
       }
     }
