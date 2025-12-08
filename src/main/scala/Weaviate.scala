@@ -9,20 +9,19 @@ import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import java.util
 import scala.jdk.CollectionConverters._
 
-
-
 class Weaviate extends TableProvider with DataSourceRegister {
   override def shortName(): String = "weaviate"
   override def inferSchema(options: CaseInsensitiveStringMap): StructType = {
     val weaviateOptions = new WeaviateOptions(options)
     val client = weaviateOptions.getClient()
     val className = weaviateOptions.className
-    val result = client.schema.classGetter.withClassName(className).run
-    if (result.hasErrors) throw new WeaviateResultError(result.getError.getMessages.toString)
-    if (result.getResult == null) throw new WeaviateClassNotFoundError("Class "+className+ " was not found.")
-    val properties = result.getResult.getProperties.asScala
+    val result = client.collections.getConfig(className)
+    if (result.isEmpty) throw WeaviateClassNotFoundError(s"Collection ${className} was not found.")
+    val properties = result
+      .map(r => r.properties().asScala)
+      .orElseThrow(() => WeaviateClassNotFoundError(s"Collection ${className} was not found."))
     val structFields = properties.map(p =>
-      StructField(p.getName(), Utils.weaviateToSparkDatatype(p.getDataType, p.getNestedProperties), true, Metadata.empty))
+      StructField(p.propertyName(), Utils.weaviateToSparkDatatype(p.dataTypes(), p.nestedProperties()), true, Metadata.empty))
     if (weaviateOptions.vector != null)
       structFields.append(StructField(weaviateOptions.vector, DataTypes.createArrayType(DataTypes.FloatType), true, Metadata.empty))
     if (weaviateOptions.id != null)

@@ -14,7 +14,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: temurin
-          java-version: 11
+          java-version: 17
       - name: Run integration tests to ensure release works
         run: |
           sbt -v +test
@@ -25,7 +25,6 @@ jobs:
       - name: Create jar with all dependencies included
         run: |
           sbt +assembly
-          test -f ./target/scala-2.12/spark-connector-assembly-${{ env.version }}.jar
           test -f ./target/scala-2.13/spark-connector-assembly-${{ env.version }}.jar
       - name: Publish artifact to sonatype and release to maven repo
         env:
@@ -37,5 +36,5 @@ jobs:
         with:
           generateReleasenotes: true
           name: Release ${{ env.version }}
-          artifacts: "./target/scala-2.12/spark-connector-assembly-${{ env.version }}.jar,./target/scala-2.13/spark-connector-assembly-${{ env.version }}.jar"
+          artifacts: "./target/scala-2.13/spark-connector-assembly-${{ env.version }}.jar"
           artifactContentType: application/java-archive

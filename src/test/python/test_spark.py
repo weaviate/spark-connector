@@ -31,9 +31,22 @@ def get_connector_version():
     return re.search(r"version :=\ \"(.*)\"", version_str).group(1)
 
 
+def wait_until_ready(max_attempts: int = 10) -> bool:
+    import requests, time
+    for i in range(max_attempts):
+        try:
+            if requests.get("http://localhost:8080/v1/.well-known/ready", timeout=5).status_code == 200:
+                return True
+        except requests.RequestException:
+            pass
+        if i < max_attempts - 1:
+            time.sleep(1)
+    return False
+
+
 connector_version = os.environ.get("CONNECTOR_VERSION", get_connector_version())
-scala_version = os.environ.get("SCALA_VERSION", "2.12")
-weaviate_version = os.environ.get("WEAVIATE_VERSION", "1.30.3")
+scala_version = os.environ.get("SCALA_VERSION", "2.13")
+weaviate_version = os.environ.get("WEAVIATE_VERSION", "1.32.17")
 spark_connector_jar_path = os.environ.get(
     "CONNECTOR_JAR_PATH", f"target/scala-{scala_version}/spark-connector-assembly-{connector_version}.jar"
 )
@@ -46,7 +59,7 @@ def spark():
         .appName("Weaviate Pyspark Tests")
         .master('local')
         .config("spark.jars", spark_connector_jar_path)
-        .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.0")
+        .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.13:4.0.1")
         .config("spark.driver.host", "127.0.0.1")
         .getOrCreate()
     )
@@ -69,7 +82,9 @@ def weaviate_client():
                      "CLUSTER_HOSTNAME": "node1",
                      "PERSISTENCE_DATA_PATH": "./data"},
     )
-    time.sleep(0.5)
+    time.sleep(3)
+    if not wait_until_ready():
+        raise RuntimeError("Weaviate is not ready, stopping tests")
     wclient = weaviate.Client('http://localhost:8080')
     test_class_name = "TestWillBeRemoved"
     retries = 3
@@ -83,6 +98,7 @@ def weaviate_client():
             time.sleep(1)
     yield wclient
     client.containers.get(container_name).remove(force=True)
+    time.sleep(2)
 
 
 def test_string_arrays(spark: SparkSession, weaviate_client: weaviate.Client):
@@ -118,7 +134,10 @@ def test_string_arrays(spark: SparkSession, weaviate_client: weaviate.Client):
     df = spark.createDataFrame(data=articles, schema=spark_schema)
     df.write.format("io.weaviate.spark.Weaviate") \
         .option("scheme", "http") \
-        .option("host", "localhost:8080") \
+        .option("host", "localhost") \
+        .option("port", "8080") \
+        .option("grpc:host", "localhost") \
+        .option("grpc:port", "50051") \
         .option("className", "Article") \
         .mode("append").save()
 
@@ -165,7 +184,10 @@ def test_null_values(spark: SparkSession, weaviate_client: weaviate.Client):
     df = spark.createDataFrame(data=articles, schema=spark_schema)
     df.write.format("io.weaviate.spark.Weaviate") \
         .option("scheme", "http") \
-        .option("host", "localhost:8080") \
+        .option("host", "localhost") \
+        .option("port", "8080") \
+        .option("grpc:host", "localhost") \
+        .option("grpc:port", "50051") \
         .option("className", "Article") \
         .mode("append").save()
 
@@ -199,7 +221,10 @@ def test_id_column(spark: SparkSession, weaviate_client: weaviate.Client):
     df = spark.createDataFrame(data=articles, schema=spark_schema)
     df.write.format("io.weaviate.spark.Weaviate") \
         .option("scheme", "http") \
-        .option("host", "localhost:8080") \
+        .option("host", "localhost") \
+        .option("port", "8080") \
+        .option("grpc:host", "localhost") \
+        .option("grpc:port", "50051") \
         .option("className", "Article") \
         .option("id", "id") \
         .mode("append").save()
@@ -214,7 +239,10 @@ def test_id_column(spark: SparkSession, weaviate_client: weaviate.Client):
         df = spark.createDataFrame(data=articles, schema=spark_schema)
         df.write.format("io.weaviate.spark.Weaviate") \
             .option("scheme", "http") \
-            .option("host", "localhost:8080") \
+            .option("host", "localhost") \
+            .option("port", "8080") \
+            .option("grpc:host", "localhost") \
+            .option("grpc:port", "50051") \
             .option("className", "Article") \
             .option("id", "id") \
             .mode("append").save()
@@ -272,7 +300,10 @@ def test_large_movie_dataset(spark: SparkSession, weaviate_client: weaviate.Clie
     df = spark.createDataFrame(data=movies, schema=movie_spark_schema)
     df.write.format("io.weaviate.spark.Weaviate") \
         .option("scheme", "http") \
-        .option("host", "localhost:8080") \
+        .option("host", "localhost") \
+        .option("port", "8080") \
+        .option("grpc:host", "localhost") \
+        .option("grpc:port", "50051") \
         .option("className", "Movies") \
         .mode("append").save()
 
@@ -335,7 +366,10 @@ def test_kafka_streaming(spark: SparkSession, weaviate_client: weaviate.Client, 
         df.writeStream
         .format("io.weaviate.spark.Weaviate")
         .option("scheme", "http")
-        .option("host", "localhost:8080")
+        .option("host", "localhost")
+        .option("port", "8080")
+        .option("grpc:host", "localhost")
+        .option("grpc:port", "50051")
         .option("className", "Article")
         .option("checkpointLocation", tmp_path.absolute())
         .outputMode("append")
@@ -372,7 +406,10 @@ def test_kafka_streaming_event_data(spark: SparkSession, weaviate_client: weavia
         df.writeStream
         .format("io.weaviate.spark.Weaviate")
         .option("scheme", "http")
-        .option("host", "localhost:8080")
+        .option("host", "localhost")
+        .option("port", "8080")
+        .option("grpc:host", "localhost")
+        .option("grpc:port", "50051")
         .option("className", "Event")
         .option("checkpointLocation", tmp_path.absolute())
         .option("id", "id_column")
@@ -410,8 +447,10 @@ def test_kafka_person_data(spark: SparkSession, weaviate_client: weaviate.Client
         df.writeStream
         .format("io.weaviate.spark.Weaviate")
         .option("scheme", "http")
-        .option("host", "localhost:8080")
-        .option("grpc:host", "localhost:50051")
+        .option("host", "localhost")
+        .option("port", "8080")
+        .option("grpc:host", "localhost")
+        .option("grpc:port", "50051")
         .option("className", "Person")
         .option("checkpointLocation", tmp_path.absolute())
         .option("id", "id_column")
@@ -449,7 +488,10 @@ def test_kafka_streaming_byov_data(spark: SparkSession, weaviate_client: weaviat
         df.writeStream
         .format("io.weaviate.spark.Weaviate")
         .option("scheme", "http")
-        .option("host", "localhost:8080")
+        .option("host", "localhost")
+        .option("port", "8080")
+        .option("grpc:host", "localhost")
+        .option("grpc:port", "50051")
         .option("className", "BringYourOwnVector")
         .option("checkpointLocation", tmp_path.absolute())
         .option("id", "id_column")

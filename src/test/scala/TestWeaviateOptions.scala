@@ -1,5 +1,6 @@
 package io.weaviate.spark
 
+import io.weaviate.client6.v1.api.collections.query.ConsistencyLevel
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -252,7 +253,7 @@ class TestWeaviateOptions extends AnyFunSuite {
     assert(weaviateOptions2.timeout == 60)
     assert(weaviateOptions2.apiKey == "apiKey")
     assert(!weaviateOptions2.grpcSecured)
-    assert(weaviateOptions2.grpcHost == null)
+    assert(weaviateOptions2.grpcHost == weaviateOptions2.host)
 
     val options3: CaseInsensitiveStringMap =
       new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost",
@@ -269,34 +270,20 @@ class TestWeaviateOptions extends AnyFunSuite {
     assert(weaviateOptions3.timeout == 60)
     assert(weaviateOptions3.apiKey == "apiKey")
     assert(!weaviateOptions3.grpcSecured)
-    assert(weaviateOptions3.grpcHost == null)
-  }
-
-  test("Test that getConnection returns the same WeaviateClient object") {
-    val options: CaseInsensitiveStringMap =
-      new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost:8080", "className" -> "pinball", "batchSize" -> "19").asJava)
-    val weaviateOptions: WeaviateOptions = new WeaviateOptions(options)
-    val client = weaviateOptions.getClient()
-    assert(client != null)
-    val client2 = weaviateOptions.getClient()
-    assert(client == client2)
-    val weaviateOptions3: WeaviateOptions = new WeaviateOptions(options)
-    val client3 = weaviateOptions3.getClient()
-    assert(client != client3)
-    assert(client2 != client3)
+    assert(weaviateOptions3.grpcHost == weaviateOptions3.host)
   }
 
   test("Test valid consistency level") {
     val options: CaseInsensitiveStringMap =
-      new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost:8080", "className" -> "pinball", "consistencyLevel" -> "ALL").asJava)
+      new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost", "port" -> "8080", "className" -> "pinball", "consistencyLevel" -> "ALL").asJava)
 
     val weaviateOptions: WeaviateOptions = new WeaviateOptions(options)
-    assert(weaviateOptions.consistencyLevel == "ALL")
+    assert(weaviateOptions.consistencyLevel == ConsistencyLevel.ALL)
   }
 
   test("Test invalid consistency level") {
     val options: CaseInsensitiveStringMap =
-      new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost:8080", "className" -> "pinball", "consistencyLevel" -> "EVENTUAL").asJava)
+      new CaseInsensitiveStringMap(Map("scheme" -> "http", "host" -> "localhost", "port" -> "8080", "className" -> "pinball", "consistencyLevel" -> "EVENTUAL").asJava)
 
     assertThrows[WeaviateOptionsError] {
       new WeaviateOptions(options)

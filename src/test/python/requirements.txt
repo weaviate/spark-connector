@@ -1,7 +1,8 @@
-pyspark==3.5.5
+pyspark==4.0.1
 pytest
 docker
 weaviate-client==3.26.7
 pandas
 testcontainers
 kafka-python
+requests

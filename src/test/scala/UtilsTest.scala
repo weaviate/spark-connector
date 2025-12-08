@@ -1,12 +1,11 @@
 package io.weaviate.spark
 
-import io.weaviate.client.v1.schema.model.{DataType, Property}
+import io.weaviate.client6.v1.api.collections.{DataType, Property}
 import org.apache.spark
-import org.apache.spark.sql.types.{ArrayType, DataTypes, StructField, StructType}
+import org.apache.spark.sql.types.{ArrayType, DataTypes, StructType}
 import org.scalatest.funsuite.AnyFunSuite
 
-import java.util
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class UtilsTest extends AnyFunSuite {
   test("Test Weaviate Datatype to Spark Datatype conversion") {
@@ -27,10 +26,10 @@ class UtilsTest extends AnyFunSuite {
     assert(Utils.weaviateToSparkDatatype(List("blob").asJava, null) == DataTypes.StringType)
     assert(Utils.weaviateToSparkDatatype(List("MyClassReference").asJava, null) == DataTypes.StringType)
     val objectProperty = getObjectPropertyType(DataType.OBJECT)
-    val structProperty = Utils.weaviateToSparkDatatype(objectProperty.getDataType, objectProperty.getNestedProperties)
+    val structProperty = Utils.weaviateToSparkDatatype(objectProperty.dataTypes(), objectProperty.nestedProperties())
     assertStructType(structProperty)
     val objectArrayProperty = getObjectPropertyType(DataType.OBJECT_ARRAY)
-    val arrayStructProperty = Utils.weaviateToSparkDatatype(objectArrayProperty.getDataType, objectArrayProperty.getNestedProperties)
+    val arrayStructProperty = Utils.weaviateToSparkDatatype(objectArrayProperty.dataTypes(), objectArrayProperty.nestedProperties())
     assert(arrayStructProperty != null)
     assert(arrayStructProperty.isInstanceOf[ArrayType])
     assert(arrayStructProperty.asInstanceOf[ArrayType].elementType.isInstanceOf[StructType])
@@ -46,7 +45,7 @@ class UtilsTest extends AnyFunSuite {
     assert(st.fieldIndex("nestedNumber") == 1)
     assert(st.fieldIndex("nestedText") == 2)
     assert(st.fieldIndex("nestedObjects") == 3)
-    val nestedObjects = st.toIterator.find(_.name == "nestedObjects").get
+    val nestedObjects = st.find(_.name == "nestedObjects").get
     // check nestedObjects fields
     val nestedNames = List("nestedDateLvl2", "nestedBoolLvl2", "nestedNumbersLvl2", "moreNested")
     val nestedObjectsFields = nestedObjects.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[StructType].fields
@@ -54,7 +53,7 @@ class UtilsTest extends AnyFunSuite {
       assert(nestedNames.contains(f.name))
     })
     // check moreNested fields
-    val moreNested = nestedObjectsFields.toIterator.find(_.name == "moreNested").get
+    val moreNested = nestedObjectsFields.find(_.name == "moreNested").get
     val moreNestedNames = List("a", "b")
     val moreNestedFields = moreNested.dataType.asInstanceOf[StructType].fields
     moreNestedFields.foreach(f => {
@@ -63,55 +62,23 @@ class UtilsTest extends AnyFunSuite {
   }
 
   private def getObjectPropertyType(dataType: String): Property = {
-    Property.builder()
-      .name("objectProperty")
-      .dataType(util.Arrays.asList(dataType))
-      .nestedProperties(util.Arrays.asList(
-        Property.NestedProperty.builder()
-          .name("nestedInt")
-          .dataType(util.Arrays.asList(DataType.INT))
-          .build(),
-        Property.NestedProperty.builder()
-          .name("nestedNumber")
-          .dataType(util.Arrays.asList(DataType.NUMBER))
-          .build(),
-        Property.NestedProperty.builder()
-          .name("nestedText")
-          .dataType(util.Arrays.asList(DataType.TEXT))
-          .build(),
-        Property.NestedProperty.builder()
-          .name("nestedObjects")
-          .dataType(util.Arrays.asList(DataType.OBJECT_ARRAY))
-          .nestedProperties(util.Arrays.asList(
-            Property.NestedProperty.builder()
-              .name("nestedBoolLvl2")
-              .dataType(util.Arrays.asList(DataType.BOOLEAN))
-              .build(),
-            Property.NestedProperty.builder()
-              .name("nestedDateLvl2")
-              .dataType(util.Arrays.asList(DataType.DATE))
-              .build(),
-            Property.NestedProperty.builder()
-              .name("nestedNumbersLvl2")
-              .dataType(util.Arrays.asList(DataType.NUMBER_ARRAY))
-              .build(),
-            Property.NestedProperty.builder()
-              .name("moreNested")
-              .dataType(util.Arrays.asList(DataType.OBJECT))
-              .nestedProperties(util.Arrays.asList(
-                Property.NestedProperty.builder()
-                  .name("a")
-                  .dataType(util.Arrays.asList(DataType.TEXT))
-                  .build(),
-                Property.NestedProperty.builder()
-                  .name("b")
-                  .dataType(util.Arrays.asList(DataType.NUMBER))
-                  .build()
-              ))
-              .build()
-          ))
-          .build()
-      ))
-      .build()
+    val nestedObjects = new Property.Builder("nestedObjects", DataType.OBJECT_ARRAY)
+      .nestedProperties(
+        Property.bool("nestedBoolLvl2"),
+        Property.date("nestedDateLvl2"),
+        Property.numberArray("nestedNumbersLvl2"),
+        Property.`object`("moreNested", moreNested => moreNested.nestedProperties(
+          Property.text("a"),
+          Property.number("b")
+        ))
+      ).build()
+
+    new Property.Builder("objectProperty", dataType)
+      .nestedProperties(
+        Property.integer("nestedInt"),
+        Property.number("nestedNumber"),
+        Property.text("nestedText"),
+        nestedObjects
+      ).build()
   }
 }

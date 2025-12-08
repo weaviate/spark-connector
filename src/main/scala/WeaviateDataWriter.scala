@@ -2,12 +2,12 @@ package io.weaviate.spark
 
 import com.google.gson.reflect.TypeToken
 import com.google.gson.{Gson, JsonSyntaxException}
+import io.weaviate.client6.v1.api.collections.{WeaviateObject, DataType => WeaviateDataType}
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
 import org.apache.spark.sql.types._
-import io.weaviate.client.v1.data.model.WeaviateObject
-import io.weaviate.client.v1.schema.model.WeaviateClass
+import io.weaviate.client6.v1.api.collections.{CollectionConfig, Vectors}
 import org.apache.spark.sql.catalyst.util.{ArrayData, GenericArrayData}
 
 import java.util.{Map => JavaMap}
@@ -20,54 +20,53 @@ case class WeaviateCommitMessage(msg: String) extends WriterCommitMessage
 
 case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructType)
   extends DataWriter[InternalRow] with Serializable with Logging {
-  var batch = mutable.Map[String, WeaviateObject]()
-  private val weaviateClass = weaviateOptions.getWeaviateClass()
+  var batch = mutable.Map[String, WeaviateObject[JavaMap[String, Object]]]()
+  private lazy val weaviateClass = weaviateOptions.getCollectionConfig()
 
   override def write(record: InternalRow): Unit = {
     val weaviateObject = buildWeaviateObject(record, weaviateClass)
-    batch += (weaviateObject.getId -> weaviateObject)
+    batch += (weaviateObject.uuid -> weaviateObject)
 
     if (batch.size >= weaviateOptions.batchSize) writeBatch()
   }
 
   def writeBatch(retries: Int = weaviateOptions.retries): Unit = {
-    if (batch.size == 0) return
+    if (batch.isEmpty) return
 
-    val consistencyLevel = weaviateOptions.consistencyLevel
     val client = weaviateOptions.getClient()
 
-    val results = if (consistencyLevel != "") {
-      logInfo(s"Writing using consistency level: ${consistencyLevel}")
-      client.batch().objectsBatcher().withObjects(batch.values.toList: _*).withConsistencyLevel(consistencyLevel).run()
-    } else {
-      client.batch().objectsBatcher().withObjects(batch.values.toList: _*).run()
-    }
+    val collection = client.collections
+      .use(weaviateOptions.className)
+      .withTenant(weaviateOptions.tenant)
+      .withConsistencyLevel(weaviateOptions.consistencyLevel)
+
+    val results = collection.data.insertMany(batch.values.toList.asJava)
 
     val IDs = batch.keys.toList
 
-    if (results.hasErrors || results.getResult == null) {
+    if (results.errors() != null && !results.errors().isEmpty) {
       if (retries == 0) {
         throw WeaviateResultError(s"error getting result and no more retries left." +
-          s" Error from Weaviate: ${results.getError.getMessages}")
+          s" Error from Weaviate: ${results.errors().asScala.mkString(",")}")
       }
       if (retries > 0) {
-        logError(s"batch error: ${results.getError.getMessages}, will retry")
+        logError(s"batch error: ${results.errors().asScala.mkString(",")}, will retry")
         logInfo(s"Retrying batch in ${weaviateOptions.retriesBackoff} seconds. Batch has following IDs: ${IDs}")
         Thread.sleep(weaviateOptions.retriesBackoff * 1000)
         writeBatch(retries - 1)
       }
     } else {
-      val (objectsWithSuccess, objectsWithError) = results.getResult.partition(_.getResult.getErrors == null)
-      if (objectsWithError.size > 0 && retries > 0) {
-        val errors = objectsWithError.map(obj => s"${obj.getId}: ${obj.getResult.getErrors.toString}")
-        val successIDs = objectsWithSuccess.map(_.getId).toList
+      val (objectsWithSuccess, objectsWithError) = results.responses().asScala.partition(_.error() == null)
+      if (objectsWithError.nonEmpty && retries > 0) {
+        val errors = objectsWithError.map(obj => s"${obj.uuid()}: ${obj.error()}")
+        val successIDs = objectsWithSuccess.map(_.uuid()).toList
         logWarning(s"Successfully imported ${successIDs}. " +
           s"Retrying objects with an error. Following objects in the batch upload had an error: ${errors.mkString("Array(", ", ", ")")}")
         batch = batch -- successIDs
         writeBatch(retries - 1)
-      } else if (objectsWithError.size > 0) {
-        val errorIds = objectsWithError.map(obj => obj.getId)
-        val errorMessages = objectsWithError.map(obj => obj.getResult.getErrors.toString).distinct
+      } else if (objectsWithError.nonEmpty) {
+        val errorIds = objectsWithError.map(obj => obj.uuid())
+        val errorMessages = objectsWithError.map(obj => obj.error()).distinct
         throw WeaviateResultError(s"Error writing to weaviate and no more retries left." +
           s" IDs with errors: ${errorIds.mkString("Array(", ", ", ")")}." +
           s" Error messages: ${errorMessages.mkString("Array(", ", ", ")")}")
@@ -79,17 +78,16 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
     }
   }
 
-  private[spark] def buildWeaviateObject(record: InternalRow, weaviateClass: WeaviateClass = null): WeaviateObject = {
-    var builder = WeaviateObject.builder.className(weaviateOptions.className)
-    if (weaviateOptions.tenant != null) {
-      builder = builder.tenant(weaviateOptions.tenant)
-    }
+  private[spark] def buildWeaviateObject(record: InternalRow, collectionConfig: CollectionConfig = null): WeaviateObject[java.util.Map[String, Object]] = {
+    val builder: WeaviateObject.Builder[java.util.Map[String, Object]] = new WeaviateObject.Builder()
+
     val properties = mutable.Map[String, AnyRef]()
+    var vector: Array[Float] = null
     val vectors = mutable.Map[String, Array[Float]]()
     val multiVectors = mutable.Map[String, Array[Array[Float]]]()
     schema.zipWithIndex.foreach(field =>
       field._1.name match {
-        case weaviateOptions.vector => builder = builder.vector(record.getArray(field._2).toArray(FloatType))
+        case weaviateOptions.vector => vector = record.getArray(field._2).toArray(FloatType)
         case key if weaviateOptions.vectors.contains(key) => vectors += (weaviateOptions.vectors(key) -> record.getArray(field._2).toArray(FloatType))
         case key if weaviateOptions.multiVectors.contains(key) => {
           val multiVectorArrayData = record.get(field._2, ArrayType(ArrayType(FloatType))) match {
@@ -105,34 +103,40 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
 
           multiVectors += (weaviateOptions.multiVectors(key) -> multiVector)
         }
-        case weaviateOptions.id => builder = builder.id(record.getString(field._2))
-        case _ => properties(field._1.name) = getPropertyValue(field._2, record, field._1.dataType, false, field._1.name, weaviateClass)
+        case weaviateOptions.id => builder.uuid(record.getString(field._2))
+        case _ => properties(field._1.name) = getPropertyValue(field._2, record, field._1.dataType, false, field._1.name, collectionConfig)
       }
     )
+
     if (weaviateOptions.id == null) {
-      builder.id(java.util.UUID.randomUUID.toString)
+      builder.uuid(java.util.UUID.randomUUID.toString)
     }
 
+    val allVectors = ListBuffer.empty[Vectors]
+    if (vector != null) {
+      allVectors += Vectors.of(vector)
+    }
     if (vectors.nonEmpty) {
-      builder.vectors(vectors.map { case (key, arr) => key -> arr.map(Float.box) }.asJava)
+      allVectors ++= vectors.map { case (key, arr) => Vectors.of(key, arr) }
     }
     if (multiVectors.nonEmpty) {
-      builder.multiVectors(multiVectors.map { case (key, multiVector) => key -> multiVector.map { vec => { vec.map(Float.box) }} }.toMap.asJava)
+      allVectors ++= multiVectors.map { case (key, multiVector) => Vectors.of(key, multiVector) }
     }
-    builder.properties(properties.asJava).build
+
+    builder.tenant(weaviateOptions.tenant).properties(properties.asJava).vectors(allVectors.toSeq : _*).build()
   }
 
-  def getPropertyValue(index: Int, record: InternalRow, dataType: DataType, parseObjectArrayItem: Boolean, propertyName: String, weaviateClass: WeaviateClass): AnyRef = {
+  def getPropertyValue(index: Int, record: InternalRow, dataType: DataType, parseObjectArrayItem: Boolean, propertyName: String, collectionConfig: CollectionConfig): AnyRef = {
     val valueFromField = getValueFromField(index, record, dataType, parseObjectArrayItem)
-    if (weaviateClass != null) {
+    if (collectionConfig != null) {
       var dt = ""
-      weaviateClass.getProperties.forEach(p => {
-        if (p.getName == propertyName) {
+      collectionConfig.properties().forEach(p => {
+        if (p.propertyName() == propertyName) {
           // we are just looking for geoCoordinates or phoneNumber type
-          dt = p.getDataType.get(0)
+          dt = p.dataTypes().get(0)
         }
       })
-      if ((dt == "geoCoordinates" || dt == "phoneNumber") && valueFromField.isInstanceOf[String]) {
+      if ((dt == WeaviateDataType.GEO_COORDINATES || dt == WeaviateDataType.PHONE_NUMBER) && valueFromField.isInstanceOf[String]) {
         return jsonToJavaMap(propertyName, valueFromField.toString).get
       }
     }
@@ -209,7 +213,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
           })
         }
         objList.asJava
-      case default => throw new SparkDataTypeNotSupported(s"DataType ${default} is not supported by Weaviate")
+      case default => throw SparkDataTypeNotSupported(s"DataType ${default} is not supported by Weaviate")
     }
   }
 
@@ -224,7 +228,7 @@ case class WeaviateDataWriter(weaviateOptions: WeaviateOptions, schema: StructTy
   }
 
   override def abort(): Unit = {
-    // TODO rollback previously written batch results if issue occured
+    // TODO rollback previously written batch results if issue occurred
     logError("Aborted data write")
   }
 }
